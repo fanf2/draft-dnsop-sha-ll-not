@@ -1,11 +1,11 @@
 %%%
-title           = "Hardening DNSSEC against collisions in SHA-1 and other cryptographic hash algorithms"
+title           = "Hardening DNSSEC against collision weaknesses in SHA-1 and other cryptographic hash algorithms"
 abbrev          = "DNSSEC vs collision attacks"
 workgroup       = "DNS Operations"
 area            = "Operations and Management"
 submissiontype  = "IETF"
 ipr             = "trust200902"
-date            = 2020-02-25T00:00:00Z
+date            = 2020-02-27T19:13:12Z
 keyword         = [
     "DNS",
     "SHA-1",
