@@ -13,7 +13,7 @@
 <country>England</country>
 </postal><email>dot@dotat.at</email>
 </address></author>
-<date year="2020" month="February" day="27"></date>
+<date year="2020" month="March" day="5"></date>
 <area>Operations and Management</area><workgroup>DNS Operations</workgroup><keyword>DNS</keyword>
 <keyword>SHA-1</keyword>
 <keyword>RRSIG</keyword>
@@ -46,7 +46,7 @@ deprecates these vulnerable algorithms (<xref target="deprecate"></xref>).</t>
 <xref target="timeline"></xref>). This document's timetable for deprecating SHA-1 in
 DNSSEC (<xref target="deprecate"></xref>) is based on those examples, adapted for the
 particulars of the DNS. <xref target="seccons"></xref> discusses the trade-offs between
-speed and security.</t>
+speedy deprecation and security.</t>
 <t>A collision attack can be used against DNSSEC in a number of ways,
 some of which are explored in <xref target="attack"></xref>. Certain weaknesses in the way
 DNSSEC is sometimes deployed can make collision attacks easier to
@@ -150,7 +150,7 @@ of the service SHOULD NOT generate a new key with algorithms 5 or 7
 for a zone that does not already have a key with the same algorithm.
 They MUST NOT do so after the end of 2020.</t>
 <t>Zones signed with algorithms 5 or 7 SHOULD be rolled over to a
-mandatory or recommended algorithm as soon as possible. The rollovers
+mandatory algorithm (13 or 8) as soon as possible. The rollovers
 MUST be complete before the end of 2021.</t>
 </section>
 
@@ -171,12 +171,277 @@ significantly weaker before then.</t>
 </section>
 
 <section anchor="collide" title="Collision attacks against DNSSEC">
+<t>This section explains how collisions in cryptographic functions
+(such as SHA-1) can be used to break DNSSEC data authentication.
+<xref target="attack"></xref> has some more specific examples of how this break can be
+used to mount attacks.</t>
+
+<section anchor="chosen-prefix-collisions" title="Chosen-prefix collisions">
+<t>With hash functions like SHA-1, a chosen-prefix collision attack
+uses two messages that have a structure like this:</t>
+
+<figure><artwork>            +----------+-----------+--------+
+message-1:  | prefix-1 | collide-1 | suffix |
+            +----------+-----------+--------+
+
+            +----------+-----------+--------+
+message-2:  | prefix-2 | collide-2 | suffix |
+            +----------+-----------+--------+
+</artwork></figure>
+
+<t>The two prefixes are entirely under the attacker's control.</t>
+<t>The collision blocks are calculated to make the hashes collide. They
+look like binary junk and cannot be made to conform to any
+particular syntax. The collision blocks are 588 bytes long in the
+best attack on SHA-1 at the time of writing <xref target="SHA-mbles"></xref>.</t>
+<t>The messages may need a suffix so that they are syntactically valid,
+but this must be the same in both messages.</t>
 </section>
 
-<section anchor="harden" title="Collision attacks and RRSIG records">
+<section anchor="collision-attacks-and-signatures" title="Collision attacks and signatures">
+<t>A signature algorithm like RSASHA1 takes a cryptographic hash of the
+message (using SHA-1 in this case) and uses an asymmetric algorithm
+(RSA in this case) to turn the hash into a signature.</t>
+<t>If the hash function is vulnerable, like SHA-1, then an attacker can:</t>
+<t>
+<list style="symbols">
+<t>construct two prefixes, one innocuous and one malicious;</t>
+<t>calculate collision blocks so the two messages have the same hash;</t>
+<t>submit the innocuous message to be signed by some authority;</t>
+<t>copy the signature from the innocious message to the malicious
+message;</t>
+<t>use the signed malicious message to perform attacks that would
+not be possible without it.</t>
+</list>
+</t>
+<t>The copied signature works on both the innocuous and malicious
+messages because their hashes match.</t>
+<t>It is usually less easy than this, because in most protocols part of
+the innocuous message is chosen by the signer, so the attacker needs
+to predict how the signer will work.</t>
+</section>
+
+<section anchor="breaking-dnssec" title="Breaking DNSSEC">
+<t>To use a collision attack against DNSSEC, the innoccuous and
+malicious messages are DNS RRsets.</t>
+<t>DNSSEC provides strong authentication for DNS data. Within the DNS,
+it prevents spoofing attacks and cache poisoning attacks. For
+applications that use the DNS, DNSSEC can provide strong
+authentication for application identifiers, such as a host name and
+associated public key or challenge/response. Breaking DNSSEC means
+subverting this authentication.</t>
+<t>If an attacker has even very limited access to update a DNS zone
+that uses SHA-1 (algorithm 5 or 7), the attacker can use a collision
+attack to gain control over other names in the same zone.</t>
+<t>Our attacker is able to update the DNS for certain innoccuous
+records. The zone owner signs the updated innoccuous records and
+publishes the new records and RRSIG in the zone. The attacker can
+then make a DNS query for the updated records, and copy the
+signature field from the innoccuous RRSIG into the signature field
+of the attacker's malicious RRSIG. The attacker can use the signed
+malicious RRset as part of a DNS spoofing or cache poisoning attack.
+<xref target="attack"></xref> has some examples.</t>
+</section>
+
+<section anchor="collision-attacks-and-rrsig-records" title="Collision attacks and RRSIG records">
+<t>When the attacker calculates the collision blocks, there is a bit
+more to the innoccuous and malicious messages than just the RRsets.
+They need to be in the format used for constructing RRSIG records
+specified in <xref target="RFC4034"></xref> section 3.1.8.1 and sketched in the diagram
+below:</t>
+
+<figure><artwork>+------------------------------------+
+| RRSIG RDATA                        |
++------------------------------------+
+| NAME TYPE CLASS TTL RDLENGTH RDATA |
++------------------------------------+
+| ... more records ...               |
++------------------------------------+
+| NAME TYPE CLASS TTL RDLENGTH (     |
+|                 collision blocks ) |
++------------------------------------+
+</artwork></figure>
+
+<t>The RRSIG RDATA is controlled by the signer, and must be predicted
+by the attacker. <xref target="harden"></xref> discusses how easy it is to predict the
+RRSIG RDATA fields.</t>
+<t>The DNS records are under the attacker's control, with some
+limitations:</t>
+<t>
+<list style="symbols">
+<t>In the innoccuous records, the NAME and TYPE identify an RRset
+that the attacker can update.</t>
+<t>In the malicious records, the NAME must be in a zone signed by
+the same key as the innoccuous records.</t>
+<t>The innoccuous and malicious TYPEs do not need to be the same,
+but they must both have RDATA fields that can accommodate the
+collision blocks.</t>
+<t>The attacker needs to ensure the records containg the collision
+blocks come last when the RRsets are sorted into canonical
+order.</t>
+<t>The innoccuous and malicious records do not have to be aligned
+with each other, but they need to have the same total length.</t>
+</list>
+</t>
+</section>
+</section>
+
+<section anchor="harden" title="Hardening RRSIG records">
+<t>To perform a collision attack against DNSSEC, the attacker needs to
+know the RRSIG RDATA fields that the zone owner will use when
+signing the attacker's innoccuous records.</t>
+<t>The RRSIG RDATA fields are specified in <xref target="RFC4034"></xref> section 3.1.
+They are:</t>
+<t>
+<list style="symbols">
+<t>Type covered: same as the TYPE of the innoccuous RRset.</t>
+<t>Algorithm: same as the algorithm of the zone's DNSKEY records,
+which for a vulnerable zone will be 5 or 7.</t>
+<t>Labels: derived from the NAME of the innoccuous RRset.</t>
+<t>Original TTL: same as the TTL of the innoccuous RRset.</t>
+<t>Signature expiration: a time set by the signer.</t>
+<t>Signature inception: a time set by the signer.</t>
+<t>Key tag: obtained from one of the zone's DNSKEY records.</t>
+<t>Signer's name: the name of the zone's DNSKEY records.</t>
+</list>
+</t>
+<t>We can see that all of these fields are known to the attacker, apart
+from the inception and expiration times.</t>
+
+<section anchor="predicting-inception-and-expiration-times" title="Predicting inception and expiration times">
+<t>There are a number of common ways for DNSSEC signers to set
+signature inception and expiration times:</t>
+<t>
+<list style="symbols">
+<t>The times are known offsets from the moment a DNS update is
+processed.</t>
+<t>The update time is rounded to a multiple of (for example) 24
+hours and the signature times are known offsets from that.</t>
+<t>The zone is signed on a known schedule and the times are derived
+from that schedule.</t>
+</list>
+</t>
+<t>So in many cases an attacker can predict all the RRSIG RDATA fields
+with little difficulty.</t>
+</section>
+
+<section anchor="unpredictable-x-509-certificates" title="Unpredictable X.509 certificates">
+<t>(A brief diversion to provide some rationale for the next
+sub-section.)</t>
+<t>In 2008 a chosen-prefix collision attack against MD5 was used to
+obtain an illegitimate CA certificate signed by a commercial CA
+[ROGUE-CA]. A key part of this attack was to predict the serial
+number and validity period assigned by the commercial CA to the
+innocuous certificate so that its MD5 hash would collide with the
+malicious rogue CA certificate.</t>
+<t>Following this attack, certificate authorities started using random
+serial numbers instead of sequential numbers. In 2016 the CA/Browser
+forum baseline requirements were amended to increase the amount of
+randomness required from 20 bits to 64 bits [CABforum2016]. This
+extra hardening was in addition to deprecating SHA-1 [CABforum2014].</t>
+</section>
+
+<section anchor="less-predictable-rrsig-records" title="Less predictable RRSIG records">
+<t>In addition to upgrading to a secure algorithm (<xref target="deprecate"></xref>),
+DNSSEC signers can provide extra protection against possible
+collision attacks by adding entropy to make RRSIG inception and
+expiration times less predictable.</t>
+<t>The inception time SHOULD include at least 12 bits of output from a
+CSPRNG. (2^12 seconds is slightly more than an hour.) For example,
+set the inception time to the signing time minus an hour minus the
+entropy.</t>
+<t>The expiration time SHOULD include output from a CSPRNG equivalent
+to about 25% of the nominal validity period. For instance, 19 bits
+(6 days) if the validity period is 1 month, or 17 bits (1.5 days) if
+the validity period is 1 week. For example, set the expiration time
+to the signing time plus 75% of the validity period plus the
+entropy.</t>
+</section>
 </section>
 
 <section anchor="attack" title="Collision attacks and other DNS record types">
+<t>This section discusses how a SHA-1 collision attack can be used with
+various DNS record types. For an RRtype to be suitable it needs to
+have a large RDATA with basically no internal structure, to
+accommodate the collision blocks, which are 588 bytes long in the
+best attack on SHA-1 at the time of writing <xref target="SHA-mbles"></xref>.</t>
+<t>There are a number of weaknesses that make a collision attack easier
+to carry out, or which make the consequences of an attack more
+severe. This section describes some mitigations for these
+weaknesses, but note that these mitigations do not prevent collision
+attacks. The main defence is to upgrade zones to a secure algorithm
+(<xref target="deprecate"></xref>) and in many cases that will be easier than the
+additional mitigations outlined below.</t>
+
+<section anchor="txt-records" title="TXT records">
+<t>TXT records are an attractive vehicle for a collision attack.</t>
+<t>Access to update TXT records might be granted to support things like
+ACME dns-01 challenges <xref target="RFC8555"></xref>, so they can be useful as an
+attacker's innoccuous records.</t>
+<t>As the target of an attacker's malicious records, TXT records have
+several interesting functions that might be useful to an attacker,
+including ACME <xref target="RFC8555"></xref>, DKIM <xref target="RFC6376"></xref>, SPF <xref target="RFC7208"></xref>,
+authorization to provision cloud services, etc.</t>
+
+<section anchor="syntax-of-txt-records" title="Syntax of TXT records">
+<t>A TXT record's RDATA contains a sequence of strings, each of which
+is a length octet followed by up to 255 octets of data. A single
+string is too small to accommodate SHA-1 collision blocks.</t>
+<t>An attacker can cope with this difficulty by not worrying about how
+the string lengths end up inside a collision block. At the end of
+the block there will be some unpredictable length of string that
+needs to be filled; the attacker can append 255 zero bytes, which
+will fill the remainder of the unknown string. The excess zero bytes
+will parse as a sequence of zero-length strings. Although the
+unfilled string lengths may be different in the inoccuous and
+malicious records, they are both fixed by an identical suffix of 255
+zeroes.</t>
+</section>
+
+<section anchor="mitigating-txt-record-attacks" title="Mitigating TXT record attacks">
+<t>Some attacks might be prevented by imposing stricter requirements on
+TXT records, since most practical uses do not put un-encoded binary
+data in TXT records.</t>
+<t>An authoritative server MAY reject TXT records in DNS UPDATEs and
+zone files if the strings contain ASCII control characters or
+invalid UTF-8. This strict checking SHOULD be configurable so that
+zone owners can use unrestricted binary in TXT records if they wish.</t>
+</section>
+</section>
+
+<section anchor="caa-records" title="CAA records">
+<t>An attacker might want to spoof certificate authority authorization
+records <xref target="RFC6844"></xref> in order to obtain an illegitimate X.509
+certificate.</t>
+<t>A CAA record contains tag and value strings. The length of the value
+is unrestricted, which makes it easy to accommodate collision blocks.</t>
+<t>To mitigate collision attacks on CAA records, the specifications for
+CAA record syntax and how CAA records are processed by certificate
+authorities could be tightened up to reject a CAA RRset unless it is
+all printable ASCII.</t>
+</section>
+
+<section anchor="sshfp-records" title="SSHFP records">
+<t>An SSHFP record contains a fingerprint of a server public key
+<xref target="RFC4255"></xref>. They are attractive as the target of a spoofing attack.</t>
+<t>Access to update SSHFP records might be granted so that servers can
+register themselves in the DNS, so SSHFP records can be useful as an
+attacker's innoccuous records.</t>
+<t>The length of an SSHFP record is implied by its fingerprint type
+field, but they can be used in collision attacks if the length is
+not strictly checked, or if unknown fingerprint types are allowed.</t>
+<t>Authoritative DNS servers MAY reject SSHFP records with unknown
+fingerprint types or mismatched lengths in DNS UPDATEs and zone
+files. SSH clients MAY reject an entire SSHFP RRset if any record
+has a fingerprint longer than 64 bytes. (Assuming that fingerprints
+longer than 512 bits do not make sense.)</t>
+</section>
+
+<section anchor="dnskey-records" title="DNSKEY records">
+</section>
+
+<section anchor="ds-records" title="DS records">
+</section>
 </section>
 
 <section anchor="otherr" title="Other uses of SHA-1 in the DNS">
@@ -204,7 +469,7 @@ because the signer can defeat it by changing its NSEC3 salt
 (<xref target="RFC5155"></xref> section C.2.1).</t>
 </section>
 
-<section anchor="sshfp-records" title="SSHFP records">
+<section anchor="sshfp-records-1" title="SSHFP records">
 <t>An SSHFP record securely identifies an SSH server public key using a
 cryptographic digest <xref target="RFC4255"></xref>. Although SSHFP SHA-1 digests have
 not yet been deprecated, SHA-256 is preferred <xref target="RFC6594"></xref>.</t>
@@ -274,76 +539,11 @@ to upgrade to a secure algorithm.</t>
 
 <back>
 <references title="Normative References">
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4034.xml"?>
 <?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4034.xml"?>
 <?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8624.xml"?>
 </references>
 <references title="Informative References">
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4255.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6944.xml"?>
-<reference anchor='CABforum2014' target='https://cabforum.org/2014/10/16/ballot-118-sha-1-sunset/'>
-  <front>
-    <title>Ballot 118 - SHA-1 Sunset</title>
-	<author><organization>CA/Browser Forum</organization></author>
-	<date month='October' year='2014'/>
-  </front>
-</reference>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8555.xml"?>
-<reference anchor='DNSKEY-IANA' target='http://www.iana.org/assignments/dns-sec-alg-numbers'>
-  <front>
-    <title>Domain Name System Security (DNSSEC) Algorithm Numbers</title>
-	<author><organization>IANA</organization></author>
-    <date year='2017'/>
-  </front>
-</reference>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.5155.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-dnsop-rfc2845bis.xml"?>
-<reference anchor='ROOT-DNSSEC' target='https://www.root-dnssec.org/'>
-  <front>
-    <title>Information about DNSSEC for the Root Zone</title>
-	<author><organization abbrev="ICANN">
-	  Internet Corporation For Assigned Names and Numbers
-	</organization></author>
-	<author><organization>VeriSign, Inc.</organization></author>
-	<date year='2010'/>
-  </front>
-</reference>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6594.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7672.xml"?>
-<reference anchor='Wang2005' target='https://link.springer.com/chapter/10.1007/11535218_2'>
-  <front>
-    <title>Finding Collisions in the Full SHA-1</title>
-	<author initials='X.' surname='Wang' fullname='Xiaoyun Wang'/>
-	<author initials='Y.' surname='Yin' fullname='Yiqun Lisa Yin'/>
-	<author initials='H.' surname='Yu' fullname='Hongbo Yu'/>
-    <date year='2005'/>
-  </front>
-</reference>
-<reference anchor='Cochran2007' target='https://eprint.iacr.org/2007/474'>
-  <front>
-    <title>Notes on the Wang et al. 2^63 SHA-1 Differential Path</title>
-	<author initials='M.' surname='Cochran' fullname='Martin Cochran'/>
-	<date year='2007'/>
-  </front>
-</reference>
-<reference anchor='NIST-SP800-131A' target='https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-131a.pdf'>
-  <front>
-    <title>Recommendation for Transitioning the Use of CryptographicAlgorithms and Key Lengths</title>
-	<author><organization abbrev='NIST'>
-	  National Institute of Standards and Technology
-	</organization></author>
-	<date month='January' year='2011'/>
-  </front>
-</reference>
-<reference anchor='SHAppening' target='https://sites.google.com/site/itstheshappening/'>
-  <front>
-    <title>Freestart collision for full SHA-1</title>
-	<author initials='M.' surname='Stevens' fullname='Marc Stevens'/>
-	<author initials='P.' surname='Karpman' fullname='Pierre Karpman'/>
-	<author initials='T.' surname='Peyrin' fullname='Thomas Peyrin'/>
-	<date month='October' year='2015'/>
-  </front>
-</reference>
 <reference anchor='SHA-mbles' target='https://sha-mbles.github.io/'>
   <front>
     <title>
@@ -356,6 +556,16 @@ to upgrade to a secure algorithm.</t>
 	<date month='January' year='2020'/>
   </front>
 </reference>
+<reference anchor='NIST2006' target='https://csrc.nist.gov/News/2006/NIST-Comments-on-Cryptanalytic-Attacks-on-SHA-1'>
+  <front>
+    <title>NIST Comments on Cryptanalytic Attacks on SHA-1</title>
+	<author><organization abbrev='NIST'>
+	  National Institute of Standards and Technology
+	</organization></author>
+	<date year='2006'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6944.xml"?>
 <reference anchor='SHAttered' target='https://shattered.io/'>
   <front>
     <title>The first collision for full SHA-1</title>
@@ -367,14 +577,71 @@ to upgrade to a secure algorithm.</t>
 	<date month='February' year='2017'/>
   </front>
 </reference>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6844.xml"?>
-<reference anchor='NIST2006' target='https://csrc.nist.gov/News/2006/NIST-Comments-on-Cryptanalytic-Attacks-on-SHA-1'>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-dnsop-rfc2845bis.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7672.xml"?>
+<reference anchor='Wang2005' target='https://link.springer.com/chapter/10.1007/11535218_2'>
   <front>
-    <title>NIST Comments on Cryptanalytic Attacks on SHA-1</title>
+    <title>Finding Collisions in the Full SHA-1</title>
+	<author initials='X.' surname='Wang' fullname='Xiaoyun Wang'/>
+	<author initials='Y.' surname='Yin' fullname='Yiqun Lisa Yin'/>
+	<author initials='H.' surname='Yu' fullname='Hongbo Yu'/>
+    <date year='2005'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8555.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6376.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4255.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7208.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6594.xml"?>
+<reference anchor='Cochran2007' target='https://eprint.iacr.org/2007/474'>
+  <front>
+    <title>Notes on the Wang et al. 2^63 SHA-1 Differential Path</title>
+	<author initials='M.' surname='Cochran' fullname='Martin Cochran'/>
+	<date year='2007'/>
+  </front>
+</reference>
+<reference anchor='ROOT-DNSSEC' target='https://www.root-dnssec.org/'>
+  <front>
+    <title>Information about DNSSEC for the Root Zone</title>
+	<author><organization abbrev="ICANN">
+	  Internet Corporation For Assigned Names and Numbers
+	</organization></author>
+	<author><organization>VeriSign, Inc.</organization></author>
+	<date year='2010'/>
+  </front>
+</reference>
+<reference anchor='NIST-SP800-131A' target='https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-131a.pdf'>
+  <front>
+    <title>Recommendation for Transitioning the Use of CryptographicAlgorithms and Key Lengths</title>
 	<author><organization abbrev='NIST'>
 	  National Institute of Standards and Technology
 	</organization></author>
-	<date year='2006'/>
+	<date month='January' year='2011'/>
+  </front>
+</reference>
+<reference anchor='DNSKEY-IANA' target='http://www.iana.org/assignments/dns-sec-alg-numbers'>
+  <front>
+    <title>Domain Name System Security (DNSSEC) Algorithm Numbers</title>
+	<author><organization>IANA</organization></author>
+    <date year='2017'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6844.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.5155.xml"?>
+<reference anchor='CABforum2014' target='https://cabforum.org/2014/10/16/ballot-118-sha-1-sunset/'>
+  <front>
+    <title>Ballot 118 - SHA-1 Sunset</title>
+	<author><organization>CA/Browser Forum</organization></author>
+	<date month='October' year='2014'/>
+  </front>
+</reference>
+<reference anchor='SHAppening' target='https://sites.google.com/site/itstheshappening/'>
+  <front>
+    <title>Freestart collision for full SHA-1</title>
+	<author initials='M.' surname='Stevens' fullname='Marc Stevens'/>
+	<author initials='P.' surname='Karpman' fullname='Pierre Karpman'/>
+	<author initials='T.' surname='Peyrin' fullname='Thomas Peyrin'/>
+	<date month='October' year='2015'/>
   </front>
 </reference>
 </references>

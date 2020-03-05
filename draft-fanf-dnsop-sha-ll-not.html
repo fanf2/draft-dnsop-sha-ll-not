@@ -382,8 +382,22 @@
 <link href="#rfc.section.2.3" rel="Chapter" title="2.3 DNSSEC validating software"/>
 <link href="#rfc.section.2.4" rel="Chapter" title="2.4 DNS resolver services"/>
 <link href="#rfc.section.3" rel="Chapter" title="3 Collision attacks against DNSSEC"/>
-<link href="#rfc.section.4" rel="Chapter" title="4 Collision attacks and RRSIG records"/>
+<link href="#rfc.section.3.1" rel="Chapter" title="3.1 Chosen-prefix collisions"/>
+<link href="#rfc.section.3.2" rel="Chapter" title="3.2 Collision attacks and signatures"/>
+<link href="#rfc.section.3.3" rel="Chapter" title="3.3 Breaking DNSSEC"/>
+<link href="#rfc.section.3.4" rel="Chapter" title="3.4 Collision attacks and RRSIG records"/>
+<link href="#rfc.section.4" rel="Chapter" title="4 Hardening RRSIG records"/>
+<link href="#rfc.section.4.1" rel="Chapter" title="4.1 Predicting inception and expiration times"/>
+<link href="#rfc.section.4.2" rel="Chapter" title="4.2 Unpredictable X.509 certificates"/>
+<link href="#rfc.section.4.3" rel="Chapter" title="4.3 Less predictable RRSIG records"/>
 <link href="#rfc.section.5" rel="Chapter" title="5 Collision attacks and other DNS record types"/>
+<link href="#rfc.section.5.1" rel="Chapter" title="5.1 TXT records"/>
+<link href="#rfc.section.5.1.1" rel="Chapter" title="5.1.1 Syntax of TXT records"/>
+<link href="#rfc.section.5.1.2" rel="Chapter" title="5.1.2 Mitigating TXT record attacks"/>
+<link href="#rfc.section.5.2" rel="Chapter" title="5.2 CAA records"/>
+<link href="#rfc.section.5.3" rel="Chapter" title="5.3 SSHFP records"/>
+<link href="#rfc.section.5.4" rel="Chapter" title="5.4 DNSKEY records"/>
+<link href="#rfc.section.5.5" rel="Chapter" title="5.5 DS records"/>
 <link href="#rfc.section.6" rel="Chapter" title="6 Other uses of SHA-1 in the DNS"/>
 <link href="#rfc.section.6.1" rel="Chapter" title="6.1 DS and CDS records"/>
 <link href="#rfc.section.6.2" rel="Chapter" title="6.2 NSEC3 records"/>
@@ -407,7 +421,7 @@
 
   <meta name="dct.creator" content="Finch, T." />
   <meta name="dct.identifier" content="urn:ietf:id:draft-fanf-dnsop-sha-ll-not" />
-  <meta name="dct.issued" scheme="ISO8601" content="2020-2-27" />
+  <meta name="dct.issued" scheme="ISO8601" content="2020-3-5" />
   <meta name="dct.abstract" content="DNSSEC deployments have often used the SHA-1 cryptographic hash algorithm to provide authentication of DNS data. This document explains why SHA-1 is no longer secure for this purpose, and deprecates its use in DNSSEC signatures. This document updates RFC 8624." />
   <meta name="description" content="DNSSEC deployments have often used the SHA-1 cryptographic hash algorithm to provide authentication of DNS data. This document explains why SHA-1 is no longer secure for this purpose, and deprecates its use in DNSSEC signatures. This document updates RFC 8624." />
 
@@ -428,14 +442,14 @@
 </tr>
 <tr>
   <td class="left">Updates: 8624 (if approved)</td>
-  <td class="right">February 27, 2020</td>
+  <td class="right">March 5, 2020</td>
 </tr>
 <tr>
   <td class="left">Intended status: Standards Track</td>
   <td class="right"></td>
 </tr>
 <tr>
-  <td class="left">Expires: August 30, 2020</td>
+  <td class="left">Expires: September 6, 2020</td>
   <td class="right"></td>
 </tr>
 
@@ -456,7 +470,7 @@
 <p>This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.</p>
 <p>Internet-Drafts are working documents of the Internet Engineering Task Force (IETF).  Note that other groups may also distribute working documents as Internet-Drafts.  The list of current Internet-Drafts is at http://datatracker.ietf.org/drafts/current/.</p>
 <p>Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time.  It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."</p>
-<p>This Internet-Draft will expire on August 30, 2020.</p>
+<p>This Internet-Draft will expire on September 6, 2020.</p>
 <h1 id="rfc.copyrightnotice">
   <a href="#rfc.copyrightnotice">Copyright Notice</a>
 </h1>
@@ -476,9 +490,23 @@
 <li>2.3.   <a href="#rfc.section.2.3">DNSSEC validating software</a></li>
 <li>2.4.   <a href="#rfc.section.2.4">DNS resolver services</a></li>
 </ul><li>3.   <a href="#rfc.section.3">Collision attacks against DNSSEC</a></li>
-<li>4.   <a href="#rfc.section.4">Collision attacks and RRSIG records</a></li>
-<li>5.   <a href="#rfc.section.5">Collision attacks and other DNS record types</a></li>
-<li>6.   <a href="#rfc.section.6">Other uses of SHA-1 in the DNS</a></li>
+<ul><li>3.1.   <a href="#rfc.section.3.1">Chosen-prefix collisions</a></li>
+<li>3.2.   <a href="#rfc.section.3.2">Collision attacks and signatures</a></li>
+<li>3.3.   <a href="#rfc.section.3.3">Breaking DNSSEC</a></li>
+<li>3.4.   <a href="#rfc.section.3.4">Collision attacks and RRSIG records</a></li>
+</ul><li>4.   <a href="#rfc.section.4">Hardening RRSIG records</a></li>
+<ul><li>4.1.   <a href="#rfc.section.4.1">Predicting inception and expiration times</a></li>
+<li>4.2.   <a href="#rfc.section.4.2">Unpredictable X.509 certificates</a></li>
+<li>4.3.   <a href="#rfc.section.4.3">Less predictable RRSIG records</a></li>
+</ul><li>5.   <a href="#rfc.section.5">Collision attacks and other DNS record types</a></li>
+<ul><li>5.1.   <a href="#rfc.section.5.1">TXT records</a></li>
+<ul><li>5.1.1.   <a href="#rfc.section.5.1.1">Syntax of TXT records</a></li>
+<li>5.1.2.   <a href="#rfc.section.5.1.2">Mitigating TXT record attacks</a></li>
+</ul><li>5.2.   <a href="#rfc.section.5.2">CAA records</a></li>
+<li>5.3.   <a href="#rfc.section.5.3">SSHFP records</a></li>
+<li>5.4.   <a href="#rfc.section.5.4">DNSKEY records</a></li>
+<li>5.5.   <a href="#rfc.section.5.5">DS records</a></li>
+</ul><li>6.   <a href="#rfc.section.6">Other uses of SHA-1 in the DNS</a></li>
 <ul><li>6.1.   <a href="#rfc.section.6.1">DS and CDS records</a></li>
 <li>6.2.   <a href="#rfc.section.6.2">NSEC3 records</a></li>
 <li>6.3.   <a href="#rfc.section.6.3">SSHFP records</a></li>
@@ -501,7 +529,7 @@
   <h1 id="rfc.section.1"><a href="#rfc.section.1">1.</a> <a href="#introduction" id="introduction">Introduction</a></h1>
 <p id="rfc.section.1.p.1">Since 2005, SHA-1 has been known to be much weaker than it was designed to be. Over the last 5 years there has been a series of increasingly powerful demonstrations that SHA-1's weaknesses can be exploited in practice. In January 2020, Ga&#235;tan Leurent and Thomas Peyrin announced a chosen-prefix collision for SHA-1 [SHA-mbles]. This was the first practical break of SHA-1 as used in cryptographic signatures.</p>
 <p id="rfc.section.1.p.2">DNSSEC uses cryptographic signatures to authenticate DNS data. Its signature algorithms <a href="#DNSKEY-IANA">[DNSKEY-IANA]</a> include RSASHA1 (5) and RSASHA1-NSEC3-SHA1 (7) which are vulnerable to chosen-prefix collisions in SHA-1, as described in <a href="#collide">Section 3</a>. This document deprecates these vulnerable algorithms (<a href="#deprecate">Section 2</a>).</p>
-<p id="rfc.section.1.p.3">SHA-1 has been deprecated in other situations for several years (see <a href="#timeline">Appendix B</a>). This document's timetable for deprecating SHA-1 in DNSSEC (<a href="#deprecate">Section 2</a>) is based on those examples, adapted for the particulars of the DNS. <a href="#seccons">Section 7</a> discusses the trade-offs between speed and security.</p>
+<p id="rfc.section.1.p.3">SHA-1 has been deprecated in other situations for several years (see <a href="#timeline">Appendix B</a>). This document's timetable for deprecating SHA-1 in DNSSEC (<a href="#deprecate">Section 2</a>) is based on those examples, adapted for the particulars of the DNS. <a href="#seccons">Section 7</a> discusses the trade-offs between speedy deprecation and security.</p>
 <p id="rfc.section.1.p.4">A collision attack can be used against DNSSEC in a number of ways, some of which are explored in <a href="#attack">Section 5</a>. Certain weaknesses in the way DNSSEC is sometimes deployed can make collision attacks easier to carry out, or make their consequences more severe. Although the only sure way to protect against collision attacks is to use a secure algorithm (<a href="#deprecate">Section 2</a>), <a href="#harden">Section 4</a> and <a href="#attack">Section 5</a> outline some partial mitigations.</p>
 <p id="rfc.section.1.p.5">The DNS uses SHA-1 for a number of other less vulnerable purposes, as outlined in section <a href="#otherr">Section 6</a>.</p>
 <h1 id="rfc.section.1.1"><a href="#rfc.section.1.1">1.1.</a> <a href="#terminology" id="terminology">Terminology</a></h1>
@@ -597,15 +625,136 @@
 <p id="rfc.section.2.1.p.1">DNSSEC key management and zone signing software MUST remove support for algorithms 5 and 7 in their next feature release.</p>
 <h1 id="rfc.section.2.2"><a href="#rfc.section.2.2">2.2.</a> <a href="#dns-hosting-services" id="dns-hosting-services">DNS hosting services</a></h1>
 <p id="rfc.section.2.2.p.1">Authoritative DNS hosting services that include DNSSEC signing as part of the service SHOULD NOT generate a new key with algorithms 5 or 7 for a zone that does not already have a key with the same algorithm.  They MUST NOT do so after the end of 2020.</p>
-<p id="rfc.section.2.2.p.2">Zones signed with algorithms 5 or 7 SHOULD be rolled over to a mandatory or recommended algorithm as soon as possible. The rollovers MUST be complete before the end of 2021.</p>
+<p id="rfc.section.2.2.p.2">Zones signed with algorithms 5 or 7 SHOULD be rolled over to a mandatory algorithm (13 or 8) as soon as possible. The rollovers MUST be complete before the end of 2021.</p>
 <h1 id="rfc.section.2.3"><a href="#rfc.section.2.3">2.3.</a> <a href="#dnssec-validating-software" id="dnssec-validating-software">DNSSEC validating software</a></h1>
 <p id="rfc.section.2.3.p.1">Validating resolvers SHOULD have a build-time or run-time option to disable selected DNSKEY algorithms, that is, to treat them as unknown or insecure.</p>
 <p id="rfc.section.2.3.p.2">Algorithms 5 and 7 MUST be disabled in 2022 at the latest. If SHA-1 becomes significantly weaker before then, Algorithms 5 and 7 MUST be disabled in a security patch release.</p>
 <h1 id="rfc.section.2.4"><a href="#rfc.section.2.4">2.4.</a> <a href="#dns-resolver-services" id="dns-resolver-services">DNS resolver services</a></h1>
 <p id="rfc.section.2.4.p.1">Validating resolvers MUST treat algorithms 5 and 7 as unknown or insecure after the start of 2022, or earlier if SHA-1 becomes significantly weaker before then.</p>
 <h1 id="rfc.section.3"><a href="#rfc.section.3">3.</a> <a href="#collide" id="collide">Collision attacks against DNSSEC</a></h1>
-<h1 id="rfc.section.4"><a href="#rfc.section.4">4.</a> <a href="#harden" id="harden">Collision attacks and RRSIG records</a></h1>
+<p id="rfc.section.3.p.1">This section explains how collisions in cryptographic functions (such as SHA-1) can be used to break DNSSEC data authentication.  <a href="#attack">Section 5</a> has some more specific examples of how this break can be used to mount attacks.</p>
+<h1 id="rfc.section.3.1"><a href="#rfc.section.3.1">3.1.</a> <a href="#chosen-prefix-collisions" id="chosen-prefix-collisions">Chosen-prefix collisions</a></h1>
+<p id="rfc.section.3.1.p.1">With hash functions like SHA-1, a chosen-prefix collision attack uses two messages that have a structure like this:</p>
+<pre>            +----------+-----------+--------+
+message-1:  | prefix-1 | collide-1 | suffix |
+            +----------+-----------+--------+
+
+            +----------+-----------+--------+
+message-2:  | prefix-2 | collide-2 | suffix |
+            +----------+-----------+--------+
+</pre>
+<p id="rfc.section.3.1.p.2">The two prefixes are entirely under the attacker's control.</p>
+<p id="rfc.section.3.1.p.3">The collision blocks are calculated to make the hashes collide. They look like binary junk and cannot be made to conform to any particular syntax. The collision blocks are 588 bytes long in the best attack on SHA-1 at the time of writing <a href="#SHA-mbles">[SHA-mbles]</a>.</p>
+<p id="rfc.section.3.1.p.4">The messages may need a suffix so that they are syntactically valid, but this must be the same in both messages.</p>
+<h1 id="rfc.section.3.2"><a href="#rfc.section.3.2">3.2.</a> <a href="#collision-attacks-and-signatures" id="collision-attacks-and-signatures">Collision attacks and signatures</a></h1>
+<p id="rfc.section.3.2.p.1">A signature algorithm like RSASHA1 takes a cryptographic hash of the message (using SHA-1 in this case) and uses an asymmetric algorithm (RSA in this case) to turn the hash into a signature.</p>
+<p id="rfc.section.3.2.p.2">If the hash function is vulnerable, like SHA-1, then an attacker can:</p>
+<p/>
+
+<ul>
+  <li>construct two prefixes, one innocuous and one malicious;</li>
+  <li>calculate collision blocks so the two messages have the same hash;</li>
+  <li>submit the innocuous message to be signed by some authority;</li>
+  <li>copy the signature from the innocious message to the malicious message;</li>
+  <li>use the signed malicious message to perform attacks that would not be possible without it.</li>
+</ul>
+
+<p> </p>
+<p id="rfc.section.3.2.p.4">The copied signature works on both the innocuous and malicious messages because their hashes match.</p>
+<p id="rfc.section.3.2.p.5">It is usually less easy than this, because in most protocols part of the innocuous message is chosen by the signer, so the attacker needs to predict how the signer will work.</p>
+<h1 id="rfc.section.3.3"><a href="#rfc.section.3.3">3.3.</a> <a href="#breaking-dnssec" id="breaking-dnssec">Breaking DNSSEC</a></h1>
+<p id="rfc.section.3.3.p.1">To use a collision attack against DNSSEC, the innoccuous and malicious messages are DNS RRsets.</p>
+<p id="rfc.section.3.3.p.2">DNSSEC provides strong authentication for DNS data. Within the DNS, it prevents spoofing attacks and cache poisoning attacks. For applications that use the DNS, DNSSEC can provide strong authentication for application identifiers, such as a host name and associated public key or challenge/response. Breaking DNSSEC means subverting this authentication.</p>
+<p id="rfc.section.3.3.p.3">If an attacker has even very limited access to update a DNS zone that uses SHA-1 (algorithm 5 or 7), the attacker can use a collision attack to gain control over other names in the same zone.</p>
+<p id="rfc.section.3.3.p.4">Our attacker is able to update the DNS for certain innoccuous records. The zone owner signs the updated innoccuous records and publishes the new records and RRSIG in the zone. The attacker can then make a DNS query for the updated records, and copy the signature field from the innoccuous RRSIG into the signature field of the attacker's malicious RRSIG. The attacker can use the signed malicious RRset as part of a DNS spoofing or cache poisoning attack.  <a href="#attack">Section 5</a> has some examples.</p>
+<h1 id="rfc.section.3.4"><a href="#rfc.section.3.4">3.4.</a> <a href="#collision-attacks-and-rrsig-records" id="collision-attacks-and-rrsig-records">Collision attacks and RRSIG records</a></h1>
+<p id="rfc.section.3.4.p.1">When the attacker calculates the collision blocks, there is a bit more to the innoccuous and malicious messages than just the RRsets.  They need to be in the format used for constructing RRSIG records specified in <a href="#RFC4034">[RFC4034]</a> section 3.1.8.1 and sketched in the diagram below:</p>
+<pre>+------------------------------------+
+| RRSIG RDATA                        |
++------------------------------------+
+| NAME TYPE CLASS TTL RDLENGTH RDATA |
++------------------------------------+
+| ... more records ...               |
++------------------------------------+
+| NAME TYPE CLASS TTL RDLENGTH (     |
+|                 collision blocks ) |
++------------------------------------+
+</pre>
+<p id="rfc.section.3.4.p.2">The RRSIG RDATA is controlled by the signer, and must be predicted by the attacker. <a href="#harden">Section 4</a> discusses how easy it is to predict the RRSIG RDATA fields.</p>
+<p id="rfc.section.3.4.p.3">The DNS records are under the attacker's control, with some limitations:</p>
+<p/>
+
+<ul>
+  <li>In the innoccuous records, the NAME and TYPE identify an RRset that the attacker can update.</li>
+  <li>In the malicious records, the NAME must be in a zone signed by the same key as the innoccuous records.</li>
+  <li>The innoccuous and malicious TYPEs do not need to be the same, but they must both have RDATA fields that can accommodate the collision blocks.</li>
+  <li>The attacker needs to ensure the records containg the collision blocks come last when the RRsets are sorted into canonical order.</li>
+  <li>The innoccuous and malicious records do not have to be aligned with each other, but they need to have the same total length.</li>
+</ul>
+
+<p> </p>
+<h1 id="rfc.section.4"><a href="#rfc.section.4">4.</a> <a href="#harden" id="harden">Hardening RRSIG records</a></h1>
+<p id="rfc.section.4.p.1">To perform a collision attack against DNSSEC, the attacker needs to know the RRSIG RDATA fields that the zone owner will use when signing the attacker's innoccuous records.</p>
+<p id="rfc.section.4.p.2">The RRSIG RDATA fields are specified in <a href="#RFC4034">[RFC4034]</a> section 3.1.  They are:</p>
+<p/>
+
+<ul>
+  <li>Type covered: same as the TYPE of the innoccuous RRset.</li>
+  <li>Algorithm: same as the algorithm of the zone's DNSKEY records, which for a vulnerable zone will be 5 or 7.</li>
+  <li>Labels: derived from the NAME of the innoccuous RRset.</li>
+  <li>Original TTL: same as the TTL of the innoccuous RRset.</li>
+  <li>Signature expiration: a time set by the signer.</li>
+  <li>Signature inception: a time set by the signer.</li>
+  <li>Key tag: obtained from one of the zone's DNSKEY records.</li>
+  <li>Signer's name: the name of the zone's DNSKEY records.</li>
+</ul>
+
+<p> </p>
+<p id="rfc.section.4.p.4">We can see that all of these fields are known to the attacker, apart from the inception and expiration times.</p>
+<h1 id="rfc.section.4.1"><a href="#rfc.section.4.1">4.1.</a> <a href="#predicting-inception-and-expiration-times" id="predicting-inception-and-expiration-times">Predicting inception and expiration times</a></h1>
+<p id="rfc.section.4.1.p.1">There are a number of common ways for DNSSEC signers to set signature inception and expiration times:</p>
+<p/>
+
+<ul>
+  <li>The times are known offsets from the moment a DNS update is processed.</li>
+  <li>The update time is rounded to a multiple of (for example) 24 hours and the signature times are known offsets from that.</li>
+  <li>The zone is signed on a known schedule and the times are derived from that schedule.</li>
+</ul>
+
+<p> </p>
+<p id="rfc.section.4.1.p.3">So in many cases an attacker can predict all the RRSIG RDATA fields with little difficulty.</p>
+<h1 id="rfc.section.4.2"><a href="#rfc.section.4.2">4.2.</a> <a href="#unpredictable-x-509-certificates" id="unpredictable-x-509-certificates">Unpredictable X.509 certificates</a></h1>
+<p id="rfc.section.4.2.p.1">(A brief diversion to provide some rationale for the next sub-section.)</p>
+<p id="rfc.section.4.2.p.2">In 2008 a chosen-prefix collision attack against MD5 was used to obtain an illegitimate CA certificate signed by a commercial CA [ROGUE-CA]. A key part of this attack was to predict the serial number and validity period assigned by the commercial CA to the innocuous certificate so that its MD5 hash would collide with the malicious rogue CA certificate.</p>
+<p id="rfc.section.4.2.p.3">Following this attack, certificate authorities started using random serial numbers instead of sequential numbers. In 2016 the CA/Browser forum baseline requirements were amended to increase the amount of randomness required from 20 bits to 64 bits [CABforum2016]. This extra hardening was in addition to deprecating SHA-1 [CABforum2014].</p>
+<h1 id="rfc.section.4.3"><a href="#rfc.section.4.3">4.3.</a> <a href="#less-predictable-rrsig-records" id="less-predictable-rrsig-records">Less predictable RRSIG records</a></h1>
+<p id="rfc.section.4.3.p.1">In addition to upgrading to a secure algorithm (<a href="#deprecate">Section 2</a>), DNSSEC signers can provide extra protection against possible collision attacks by adding entropy to make RRSIG inception and expiration times less predictable.</p>
+<p id="rfc.section.4.3.p.2">The inception time SHOULD include at least 12 bits of output from a CSPRNG. (2^12 seconds is slightly more than an hour.) For example, set the inception time to the signing time minus an hour minus the entropy.</p>
+<p id="rfc.section.4.3.p.3">The expiration time SHOULD include output from a CSPRNG equivalent to about 25% of the nominal validity period. For instance, 19 bits (6 days) if the validity period is 1 month, or 17 bits (1.5 days) if the validity period is 1 week. For example, set the expiration time to the signing time plus 75% of the validity period plus the entropy.</p>
 <h1 id="rfc.section.5"><a href="#rfc.section.5">5.</a> <a href="#attack" id="attack">Collision attacks and other DNS record types</a></h1>
+<p id="rfc.section.5.p.1">This section discusses how a SHA-1 collision attack can be used with various DNS record types. For an RRtype to be suitable it needs to have a large RDATA with basically no internal structure, to accommodate the collision blocks, which are 588 bytes long in the best attack on SHA-1 at the time of writing <a href="#SHA-mbles">[SHA-mbles]</a>.</p>
+<p id="rfc.section.5.p.2">There are a number of weaknesses that make a collision attack easier to carry out, or which make the consequences of an attack more severe. This section describes some mitigations for these weaknesses, but note that these mitigations do not prevent collision attacks. The main defence is to upgrade zones to a secure algorithm (<a href="#deprecate">Section 2</a>) and in many cases that will be easier than the additional mitigations outlined below.</p>
+<h1 id="rfc.section.5.1"><a href="#rfc.section.5.1">5.1.</a> <a href="#txt-records" id="txt-records">TXT records</a></h1>
+<p id="rfc.section.5.1.p.1">TXT records are an attractive vehicle for a collision attack.</p>
+<p id="rfc.section.5.1.p.2">Access to update TXT records might be granted to support things like ACME dns-01 challenges <a href="#RFC8555">[RFC8555]</a>, so they can be useful as an attacker's innoccuous records.</p>
+<p id="rfc.section.5.1.p.3">As the target of an attacker's malicious records, TXT records have several interesting functions that might be useful to an attacker, including ACME <a href="#RFC8555">[RFC8555]</a>, DKIM <a href="#RFC6376">[RFC6376]</a>, SPF <a href="#RFC7208">[RFC7208]</a>, authorization to provision cloud services, etc.</p>
+<h1 id="rfc.section.5.1.1"><a href="#rfc.section.5.1.1">5.1.1.</a> <a href="#syntax-of-txt-records" id="syntax-of-txt-records">Syntax of TXT records</a></h1>
+<p id="rfc.section.5.1.1.p.1">A TXT record's RDATA contains a sequence of strings, each of which is a length octet followed by up to 255 octets of data. A single string is too small to accommodate SHA-1 collision blocks.</p>
+<p id="rfc.section.5.1.1.p.2">An attacker can cope with this difficulty by not worrying about how the string lengths end up inside a collision block. At the end of the block there will be some unpredictable length of string that needs to be filled; the attacker can append 255 zero bytes, which will fill the remainder of the unknown string. The excess zero bytes will parse as a sequence of zero-length strings. Although the unfilled string lengths may be different in the inoccuous and malicious records, they are both fixed by an identical suffix of 255 zeroes.</p>
+<h1 id="rfc.section.5.1.2"><a href="#rfc.section.5.1.2">5.1.2.</a> <a href="#mitigating-txt-record-attacks" id="mitigating-txt-record-attacks">Mitigating TXT record attacks</a></h1>
+<p id="rfc.section.5.1.2.p.1">Some attacks might be prevented by imposing stricter requirements on TXT records, since most practical uses do not put un-encoded binary data in TXT records.</p>
+<p id="rfc.section.5.1.2.p.2">An authoritative server MAY reject TXT records in DNS UPDATEs and zone files if the strings contain ASCII control characters or invalid UTF-8. This strict checking SHOULD be configurable so that zone owners can use unrestricted binary in TXT records if they wish.</p>
+<h1 id="rfc.section.5.2"><a href="#rfc.section.5.2">5.2.</a> <a href="#caa-records" id="caa-records">CAA records</a></h1>
+<p id="rfc.section.5.2.p.1">An attacker might want to spoof certificate authority authorization records <a href="#RFC6844">[RFC6844]</a> in order to obtain an illegitimate X.509 certificate.</p>
+<p id="rfc.section.5.2.p.2">A CAA record contains tag and value strings. The length of the value is unrestricted, which makes it easy to accommodate collision blocks.</p>
+<p id="rfc.section.5.2.p.3">To mitigate collision attacks on CAA records, the specifications for CAA record syntax and how CAA records are processed by certificate authorities could be tightened up to reject a CAA RRset unless it is all printable ASCII.</p>
+<h1 id="rfc.section.5.3"><a href="#rfc.section.5.3">5.3.</a> <a href="#sshfp-records" id="sshfp-records">SSHFP records</a></h1>
+<p id="rfc.section.5.3.p.1">An SSHFP record contains a fingerprint of a server public key <a href="#RFC4255">[RFC4255]</a>. They are attractive as the target of a spoofing attack.</p>
+<p id="rfc.section.5.3.p.2">Access to update SSHFP records might be granted so that servers can register themselves in the DNS, so SSHFP records can be useful as an attacker's innoccuous records.</p>
+<p id="rfc.section.5.3.p.3">The length of an SSHFP record is implied by its fingerprint type field, but they can be used in collision attacks if the length is not strictly checked, or if unknown fingerprint types are allowed.</p>
+<p id="rfc.section.5.3.p.4">Authoritative DNS servers MAY reject SSHFP records with unknown fingerprint types or mismatched lengths in DNS UPDATEs and zone files. SSH clients MAY reject an entire SSHFP RRset if any record has a fingerprint longer than 64 bytes. (Assuming that fingerprints longer than 512 bits do not make sense.)</p>
+<h1 id="rfc.section.5.4"><a href="#rfc.section.5.4">5.4.</a> <a href="#dnskey-records" id="dnskey-records">DNSKEY records</a></h1>
+<h1 id="rfc.section.5.5"><a href="#rfc.section.5.5">5.5.</a> <a href="#ds-records" id="ds-records">DS records</a></h1>
 <h1 id="rfc.section.6"><a href="#rfc.section.6">6.</a> <a href="#otherr" id="otherr">Other uses of SHA-1 in the DNS</a></h1>
 <h1 id="rfc.section.6.1"><a href="#rfc.section.6.1">6.1.</a> <a href="#ds-and-cds-records" id="ds-and-cds-records">DS and CDS records</a></h1>
 <p id="rfc.section.6.1.p.1">A DS or CDS record securely identifies a DNSKEY record using a cryptographic digest (<a href="#RFC4034">[RFC4034]</a> section 5). One of the digest types is SHA-1. It is deprecated by <a href="#RFC8624">[RFC8624]</a>.</p>
@@ -613,7 +762,7 @@
 <h1 id="rfc.section.6.2"><a href="#rfc.section.6.2">6.2.</a> <a href="#nsec3-records" id="nsec3-records">NSEC3 records</a></h1>
 <p id="rfc.section.6.2.p.1">NSEC3 is an alternative mechanism for authenticated denial of existence in DNSSEC. It is based on SHA-1 hashes of domain names. The NSEC3 specification <a href="#RFC5155">[RFC5155]</a> discusses collisions in some detail.</p>
 <p id="rfc.section.6.2.p.2">NSEC3 can be attacked with an identical-prefix collision, which is simpler than the chosen-prefix collisions that are the main subject of this document. The best collision known at the time of writing <a href="#SHAttered">[SHAttered]</a> uses two SHA-1 input blocks (128 bytes) so a collision could in principle be made to fit into a domain name for an attack on NSEC3. However it will be difficult to make the colliding domain names conform to host name syntax, and the attack will be futile because the signer can defeat it by changing its NSEC3 salt (<a href="#RFC5155">[RFC5155]</a> section C.2.1).</p>
-<h1 id="rfc.section.6.3"><a href="#rfc.section.6.3">6.3.</a> <a href="#sshfp-records" id="sshfp-records">SSHFP records</a></h1>
+<h1 id="rfc.section.6.3"><a href="#rfc.section.6.3">6.3.</a> <a href="#sshfp-records-1" id="sshfp-records-1">SSHFP records</a></h1>
 <p id="rfc.section.6.3.p.1">An SSHFP record securely identifies an SSH server public key using a cryptographic digest <a href="#RFC4255">[RFC4255]</a>. Although SSHFP SHA-1 digests have not yet been deprecated, SHA-256 is preferred <a href="#RFC6594">[RFC6594]</a>.</p>
 <p id="rfc.section.6.3.p.2">For SSHFP records the digest needs preimage security, which SHA-1 still has, and collision attacks do not affect it.</p>
 <h1 id="rfc.section.6.4"><a href="#rfc.section.6.4">6.4.</a> <a href="#tsig-authentication" id="tsig-authentication">TSIG authentication</a></h1>
@@ -710,6 +859,12 @@
     </tr>
     <tr>
       <td class="reference">
+        <b id="RFC6376">[RFC6376]</b>
+      </td>
+      <td class="top"><a>Crocker, D.</a>, <a>Hansen, T.</a> and <a>M. Kucherawy</a>, "<a href="http://tools.ietf.org/html/rfc6376">DomainKeys Identified Mail (DKIM) Signatures</a>", STD 76, RFC 6376, DOI 10.17487/RFC6376, September 2011.</td>
+    </tr>
+    <tr>
+      <td class="reference">
         <b id="RFC6594">[RFC6594]</b>
       </td>
       <td class="top"><a>Sury, O.</a>, "<a href="http://tools.ietf.org/html/rfc6594">Use of the SHA-256 Algorithm with RSA, Digital Signature Algorithm (DSA), and Elliptic Curve DSA (ECDSA) in SSHFP Resource Records</a>", RFC 6594, DOI 10.17487/RFC6594, April 2012.</td>
@@ -725,6 +880,12 @@
         <b id="RFC6944">[RFC6944]</b>
       </td>
       <td class="top"><a>Rose, S.</a>, "<a href="http://tools.ietf.org/html/rfc6944">Applicability Statement: DNS Security (DNSSEC) DNSKEY Algorithm Implementation Status</a>", RFC 6944, DOI 10.17487/RFC6944, April 2013.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="RFC7208">[RFC7208]</b>
+      </td>
+      <td class="top"><a>Kitterman, S.</a>, "<a href="http://tools.ietf.org/html/rfc7208">Sender Policy Framework (SPF) for Authorizing Use of Domains in Email, Version 1</a>", RFC 7208, DOI 10.17487/RFC7208, April 2014.</td>
     </tr>
     <tr>
       <td class="reference">
