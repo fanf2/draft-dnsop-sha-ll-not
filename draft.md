@@ -184,49 +184,136 @@ implications of the SHA-1 chosen-prefix collision.
 
 # Timeline
 
-  * 2005: Theoretical 2^63 attack on SHA-1 by Wang Xiaoyun et al.
+  * 2005: Theoretical 2^63 attack on SHA-1 [@?Wang2005] [@?Cochran2007]
 
-  * 2006: NIST starts to deprecate SHA-1
+<reference anchor='Wang2005' target='https://link.springer.com/chapter/10.1007/11535218_2'>
+  <front>
+    <title>Finding Collisions in the Full SHA-1</title>
+	<author initials='X.' surname='Wang' fullname='Xiaoyun Wang'/>
+	<author initials='Y.' surname='Yin' fullname='Yiqun Lisa Yin'/>
+	<author initials='H.' surname='Yu' fullname='Hongbo Yu'/>
+    <date year='2005'/>
+  </front>
+</reference>
 
-    https://csrc.nist.gov/News/2006/NIST-Comments-on-Cryptanalytic-Attacks-on-SHA-1
+<reference anchor='Cochran2007' target='https://eprint.iacr.org/2007/474'>
+  <front>
+    <title>Notes on the Wang et al. 2^63 SHA-1 Differential Path</title>
+	<author initials='M.' surname='Cochran' fullname='Martin Cochran'/>
+	<date year='2007'/>
+  </front>
+</reference>
 
-  * 2010: DNS root zone signed with RSASHA256
+  * 2006: NIST starts to deprecate SHA-1 [@?NIST2006]
 
-    https://www.root-dnssec.org/
+<reference anchor='NIST2006' target='https://csrc.nist.gov/News/2006/NIST-Comments-on-Cryptanalytic-Attacks-on-SHA-1'>
+  <front>
+    <title>NIST Comments on Cryptanalytic Attacks on SHA-1</title>
+	<author><organization abbrev='NIST'>
+	  National Institute of Standards and Technology
+	</organization></author>
+	<date year='2006'/>
+  </front>
+</reference>
+
+  * 2010: DNS root zone signed with RSASHA256 [@?ROOT-DNSSEC]
+
+<reference anchor='ROOT-DNSSEC' target='https://www.root-dnssec.org/'>
+  <front>
+    <title>Information about DNSSEC for the Root Zone</title>
+	<author><organization abbrev="ICANN">
+	  Internet Corporation For Assigned Names and Numbers
+	</organization></author>
+	<author><organization>VeriSign, Inc.</organization></author>
+	<date year='2010'/>
+  </front>
+</reference>
 
   * 2011: NIST formally deprecates SHA-1 for digital signatures, and
-    disallows it after 2013
+    disallows it after 2013 [@?NIST-SP800-131A] (section 3)
 
-    https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-131a.pdf
+<reference anchor='NIST-SP800-131A' target='https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-131a.pdf'>
+  <front>
+    <title>Recommendation for Transitioning the Use of CryptographicAlgorithms and Key Lengths</title>
+	<author><organization abbrev='NIST'>
+	  National Institute of Standards and Technology
+	</organization></author>
+	<date month='January' year='2011'/>
+  </front>
+</reference>
 
   * 2013: IETF recommends RSASHA1 for use in DNSSEC [@?RFC6944]
 
-  * 2014: CA/Browser forum sunsets SHA-1 in X.509 WebPKI certificates after 2015
+  * 2014: CA/Browser forum sunsets SHA-1 in X.509 WebPKI certificates
+    after 2015 [@?CABforum2014]
 
-    https://cabforum.org/2014/10/16/ballot-118-sha-1-sunset/
+<reference anchor='CABforum2014' target='https://cabforum.org/2014/10/16/ballot-118-sha-1-sunset/'>
+  <front>
+    <title>Ballot 118 - SHA-1 Sunset</title>
+	<author><organization>CA/Browser Forum</organization></author>
+	<date month='October' year='2014'/>
+  </front>
+</reference>
 
-  * 2015: SHAppening free-start collision demonstrated in SHA-1
+  * 2015: Free-start collision demonstrated in SHA-1 [@?SHAppening]
 
-    https://sites.google.com/site/itstheshappening/
+<reference anchor='SHAppening' target='https://sites.google.com/site/itstheshappening/'>
+  <front>
+    <title>Freestart collision for full SHA-1</title>
+	<author initials='M.' surname='Stevens' fullname='Marc Stevens'/>
+	<author initials='P.' surname='Karpman' fullname='Pierre Karpman'/>
+	<author initials='T.' surname='Peyrin' fullname='Thomas Peyrin'/>
+	<date month='October' year='2015'/>
+  </front>
+</reference>
 
-  * 2017: SHAttered classical collision demonstrated in SHA-1
+  * 2017: Classical collision demonstrated in SHA-1 [@?SHAttered]
 
-    https://shattered.io/
+<reference anchor='SHAttered' target='https://shattered.io/'>
+  <front>
+    <title>The first collision for full SHA-1</title>
+	<author initials='M.' surname='Stevens' fullname='Marc Stevens'/>
+	<author initials='E.' surname='Bursztein' fullname='Elie Bursztein'/>
+	<author initials='P.' surname='Karpman' fullname='Pierre Karpman'/>
+	<author initials='A.' surname='Albertini' fullname='Ange Albertini'/>
+	<author initials='Y.' surname='Markov' fullname='Yarik Markov'/>
+	<date month='February' year='2017'/>
+  </front>
+</reference>
 
-  * 2019: IETF deprecates SHA-1 for use in DNSSEC [@!RFC8624]
+  * 2019: IETF partially deprecates SHA-1 for use in DNSSEC [@!RFC8624]
 
-  * 2020: SHAmbles chosen-prefix collision demonstrated in SHA-1
+  * 2020: Chosen-prefix collision demonstrated in SHA-1 [@?SHA-mbles]
 
-    https://sha-mbles.github.io/
+<reference anchor='SHA-mbles' target='https://sha-mbles.github.io/'>
+  <front>
+    <title>
+	  SHA-1 is a Shambles:
+	  First Chosen-Prefix Collision on SHA-1
+	  and Application to the PGP Web of Trust
+	</title>
+	<author initials='G.' surname='Leurent' fullname='Gaëtan Leurent'/>
+	<author initials='T.' surname='Peyrin' fullname='Thomas Peyrin'/>
+	<date month='January' year='2020'/>
+  </front>
+</reference>
 
 
-<reference anchor='DNSKEY-IANA'	target='http://www.iana.org/assignments/dns-sec-alg-numbers'>
+<reference anchor='DNSKEY-IANA' target='http://www.iana.org/assignments/dns-sec-alg-numbers'>
   <front>
     <title>Domain Name System Security (DNSSEC) Algorithm Numbers</title>
-	<author>
-	  <organization>IANA</organization>
-	  <address><uri>http://www.iana.org/assignments/dns-sec-alg-numbers</uri></address>
-	</author>
+	<author><organization>IANA</organization></author>
     <date year='2017'/>
   </front>
 </reference>
+
+<!--
+<reference anchor='' target=''>
+  <front>
+    <title></title>
+	<author initials='.' surname='' fullname=''/>
+	<author><organization>IANA</organization></author>
+	<date year=''/>
+  </front>
+</reference>
+-->
