@@ -165,7 +165,7 @@ significantly weaker before then.
 ## DS and CDS records
 
 A DS or CDS record securely identifies a DNSKEY record using a
-cryptographic digest ([@?RFC4034] section 5). One of the digest types
+cryptographic digest ([@!RFC4034] section 5). One of the digest types
 is SHA-1. It is deprecated by [@?RFC8624].
 
 For this purpose, the digest needs preimage security, which SHA-1
@@ -178,14 +178,14 @@ existence in DNSSEC. It is based on SHA-1 hashes of domain names. The
 NSEC3 specification [@?RFC5155] discusses collisions in some detail.
 
 NSEC3 can be attacked with an identical-prefix collision, which is
-simpler than the chosen-prefix collisions that are the main subject of
-this document. The best collision known at the time of writing
-[@?SHAttered] uses two SHA-1 input blocks (128 bytes) so it could in
-principle be made to fit into a domain name for an attack on NSEC3.
-However it will be difficult to make the colliding domain names
-conform to host name syntax, and the attack will be futile because the
-signer can defeat it by changing its NSEC3 salt ([@?RFC5155 ] section
-C.2.1).
+simpler than the chosen-prefix collisions that are the main subject
+of this document. The best collision known at the time of writing
+[@?SHAttered] uses two SHA-1 input blocks (128 bytes) so a collision
+could in principle be made to fit into a domain name for an attack
+on NSEC3. However it will be difficult to make the colliding domain
+names conform to host name syntax, and the attack will be futile
+because the signer can defeat it by changing its NSEC3 salt
+([@?RFC5155] section C.2.1).
 
 ## SSHFP records
 
@@ -204,6 +204,56 @@ deprecated. Collision attacks do not affect HMAC SHA-1.
 
 
 # Security considerations {#seccons}
+
+We find ourselves in an awkward and embarrassing situation. As
+(#timeline) shows, there has been plenty of warning about the
+weakness of SHA-1. Other parts of the industry started making
+efforts to deprecate it years ago. But DNSSEC has been complacent.
+
+At the time of writing, there are 1516 top-level domains, of which
+1102 use secure DNSSEC algorithms, 274 use algorithms 5 or 7 (RSA
+SHA-1), and 140 are insecure. In the reverse DNS, 3 RIRs use secure
+DNSSEC algorithms, 2 RIRs use algorithm 5, and many of the non-RIR
+legacy delegations are insecure.
+
+## Staying secure
+
+There are still many domains that depend on SHA-1 to secure
+applications that use DNSSEC, such as issuing TLS certificates
+[@?RFC6844] [@?RFC8555], sending inter-domain email [@?RFC7672],
+and authenticating SSH servers [@?RFC4255].
+
+Some applications use the "authenticated data" (AD bit) signal from
+DNSSEC to make security decisions, and will fail if it unexpectedly
+switches off. Other applications use DNSSEC passively and will
+silently go insecure. In either case we would prefer them to
+continue working as if secure, as long as SHA-1 is still
+significantly better than insecure DNS.
+
+## When to declare SHA-1 insecure
+
+At the time of writing, a SHA-1 chosen-prefix collision costs less
+than US$100,000 in computer time, takes about a month, and requires
+the attention of expert cryptanalysts. Attacks seem to be getting
+better by a factor of 3 or 4 per year.
+
+There is not much time before collisions become affordable, and
+possible for non-experts to calculate. (#deprecate) hopes this will
+not happen within the next 2 years.
+
+This 2 year guess is likely to be too optimistic, so DNSSEC
+validators need to be prepared to disable support for SHA-1 by
+configuration change or security patch as soon as a significantly
+improved attack on SHA-1 is announced.
+
+## Avoiding unwanted insecurity
+
+The reason for not deprecating SHA-1 immediately is to allow time to
+perform algorithm rollovers, so that zones will continue to be secure.
+
+Abruptly forcing SHA-1 zones to be treated as insecure may encourage
+their operators to leave them insecure, instead of encouraging them
+to upgrade to a secure algorithm.
 
 
 # IANA considerations
