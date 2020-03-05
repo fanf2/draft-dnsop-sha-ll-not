@@ -360,6 +360,12 @@ the validity period is 1 week. For example, set the expiration time
 to the signing time plus 75% of the validity period plus the
 entropy.
 
+A signer SHOULD change its signature validity times frequently, for
+example, different times for each RRset, or different times each
+second. This is so that an attacker cannot observe the signer's
+current validity period and perform a collision attack before the
+period changes.
+
 
 # Collision attacks and other DNS record types {#attack}
 
