@@ -127,7 +127,7 @@ for a zone that does not already have a key with the same algorithm.
 They MUST NOT do so after the end of 2020.
 
 Zones signed with algorithms 5 or 7 SHOULD be rolled over to a
-mandatory or recommended algorithm as soon as possible. The rollovers
+mandatory algorithm (13 or 8) as soon as possible. The rollovers
 MUST be complete before the end of 2021.
 
 ## DNSSEC validating software
@@ -343,10 +343,10 @@ extra hardening was in addition to deprecating SHA-1 [CABforum2014].
 
 ## Less predictable RRSIG records
 
-In addition to deprecating SHA-1 ((#deprecate)), DNSSEC signers can
-provide extra protection against possible collision attacks by
-adding entropy to make RRSIG inception and expiration times less
-predictable.
+In addition to upgrading to a secure algorithm ((#deprecate)),
+DNSSEC signers can provide extra protection against possible
+collision attacks by adding entropy to make RRSIG inception and
+expiration times less predictable.
 
 The inception time SHOULD include at least 12 bits of output from a
 CSPRNG. (2^12 seconds is slightly more than an hour.) For example,
@@ -355,12 +355,104 @@ entropy.
 
 The expiration time SHOULD include output from a CSPRNG equivalent
 to about 25% of the nominal validity period. For instance, 19 bits
-if the validity period is 1 month, or 17 bits if the validity period
-is 1 week. For example, set the expiration time to the signing time
-plus 75% of the validity period plus the entropy.
+(6 days) if the validity period is 1 month, or 17 bits (1.5 days) if
+the validity period is 1 week. For example, set the expiration time
+to the signing time plus 75% of the validity period plus the
+entropy.
 
 
 # Collision attacks and other DNS record types {#attack}
+
+This section discusses how a SHA-1 collision attack can be used with
+various DNS record types. For an RRtype to be suitable it needs to
+have a large RDATA with basically no internal structure, to
+accommodate the collision blocks, which are 588 bytes long in the
+best attack on SHA-1 at the time of writing [@?SHA-mbles].
+
+There are a number of weaknesses that make a collision attack easier
+to carry out, or which make the consequences of an attack more
+severe. This section describes some mitigations for these
+weaknesses, but note that these mitigations do not prevent collision
+attacks. The main defence is to upgrade zones to a secure algorithm
+((#deprecate)) and in many cases that will be easier than the
+additional mitigations outlined below.
+
+## TXT records
+
+TXT records are an attractive vehicle for a collision attack.
+
+Access to update TXT records might be granted to support things like
+ACME dns-01 challenges [@?RFC8555], so they can be useful as an
+attacker's innoccuous records.
+
+As the target of an attacker's malicious records, TXT records have
+several interesting functions that might be useful to an attacker,
+including ACME [@?RFC8555], DKIM [@?RFC6376], SPF [@?RFC7208],
+authorization to provision cloud services, etc.
+
+### Syntax of TXT records
+
+A TXT record's RDATA contains a sequence of strings, each of which
+is a length octet followed by up to 255 octets of data. A single
+string is too small to accommodate SHA-1 collision blocks.
+
+An attacker can cope with this difficulty by not worrying about how
+the string lengths end up inside a collision block. At the end of
+the block there will be some unpredictable length of string that
+needs to be filled; the attacker can append 255 zero bytes, which
+will fill the remainder of the unknown string. The excess zero bytes
+will parse as a sequence of zero-length strings. Although the
+unfilled string lengths may be different in the inoccuous and
+malicious records, they are both fixed by an identical suffix of 255
+zeroes.
+
+### Mitigating TXT record attacks
+
+Some attacks might be prevented by imposing stricter requirements on
+TXT records, since most practical uses do not put un-encoded binary
+data in TXT records.
+
+An authoritative server MAY reject TXT records in DNS UPDATEs and
+zone files if the strings contain ASCII control characters or
+invalid UTF-8. This strict checking SHOULD be configurable so that
+zone owners can use unrestricted binary in TXT records if they wish.
+
+## CAA records
+
+An attacker might want to spoof certificate authority authorization
+records [@?RFC6844] in order to obtain an illegitimate X.509
+certificate.
+
+A CAA record contains tag and value strings. The length of the value
+is unrestricted, which makes it easy to accommodate collision blocks.
+
+To mitigate collision attacks on CAA records, the specifications for
+CAA record syntax and how CAA records are processed by certificate
+authorities could be tightened up to reject a CAA RRset unless it is
+all printable ASCII.
+
+## SSHFP records
+
+An SSHFP record contains a fingerprint of a server public key
+[@?RFC4255]. They are attractive as the target of a spoofing attack.
+
+Access to update SSHFP records might be granted so that servers can
+register themselves in the DNS, so SSHFP records can be useful as an
+attacker's innoccuous records.
+
+The length of an SSHFP record is implied by its fingerprint type
+field, but they can be used in collision attacks if the length is
+not strictly checked, or if unknown fingerprint types are allowed.
+
+Authoritative DNS servers MAY reject SSHFP records with unknown
+fingerprint types or mismatched lengths in DNS UPDATEs and zone
+files. SSH clients MAY reject an entire SSHFP RRset if any record
+has a fingerprint longer than 64 bytes. (Assuming that fingerprints
+longer than 512 bits do not make sense.)
+
+## DNSKEY records
+
+## DS records
 
 
 # Other uses of SHA-1 in the DNS {#otherr}
