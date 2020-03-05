@@ -397,6 +397,8 @@
 <link href="#rfc.section.5.2" rel="Chapter" title="5.2 CAA records"/>
 <link href="#rfc.section.5.3" rel="Chapter" title="5.3 SSHFP records"/>
 <link href="#rfc.section.5.4" rel="Chapter" title="5.4 DNSKEY records"/>
+<link href="#rfc.section.5.4.1" rel="Chapter" title="5.4.1 Shared keys"/>
+<link href="#rfc.section.5.4.2" rel="Chapter" title="5.4.2 Combined signing keys"/>
 <link href="#rfc.section.5.5" rel="Chapter" title="5.5 DS records"/>
 <link href="#rfc.section.6" rel="Chapter" title="6 Other uses of SHA-1 in the DNS"/>
 <link href="#rfc.section.6.1" rel="Chapter" title="6.1 DS and CDS records"/>
@@ -505,7 +507,9 @@
 </ul><li>5.2.   <a href="#rfc.section.5.2">CAA records</a></li>
 <li>5.3.   <a href="#rfc.section.5.3">SSHFP records</a></li>
 <li>5.4.   <a href="#rfc.section.5.4">DNSKEY records</a></li>
-<li>5.5.   <a href="#rfc.section.5.5">DS records</a></li>
+<ul><li>5.4.1.   <a href="#rfc.section.5.4.1">Shared keys</a></li>
+<li>5.4.2.   <a href="#rfc.section.5.4.2">Combined signing keys</a></li>
+</ul><li>5.5.   <a href="#rfc.section.5.5">DS records</a></li>
 </ul><li>6.   <a href="#rfc.section.6">Other uses of SHA-1 in the DNS</a></li>
 <ul><li>6.1.   <a href="#rfc.section.6.1">DS and CDS records</a></li>
 <li>6.2.   <a href="#rfc.section.6.2">NSEC3 records</a></li>
@@ -731,6 +735,7 @@ message-2:  | prefix-2 | collide-2 | suffix |
 <p id="rfc.section.4.3.p.1">In addition to upgrading to a secure algorithm (<a href="#deprecate">Section 2</a>), DNSSEC signers can provide extra protection against possible collision attacks by adding entropy to make RRSIG inception and expiration times less predictable.</p>
 <p id="rfc.section.4.3.p.2">The inception time SHOULD include at least 12 bits of output from a CSPRNG. (2^12 seconds is slightly more than an hour.) For example, set the inception time to the signing time minus an hour minus the entropy.</p>
 <p id="rfc.section.4.3.p.3">The expiration time SHOULD include output from a CSPRNG equivalent to about 25% of the nominal validity period. For instance, 19 bits (6 days) if the validity period is 1 month, or 17 bits (1.5 days) if the validity period is 1 week. For example, set the expiration time to the signing time plus 75% of the validity period plus the entropy.</p>
+<p id="rfc.section.4.3.p.4">A signer SHOULD change its signature validity times frequently, for example, different times for each RRset, or different times each second. This is so that an attacker cannot observe the signer's current validity period and perform a collision attack before the period changes.</p>
 <h1 id="rfc.section.5"><a href="#rfc.section.5">5.</a> <a href="#attack" id="attack">Collision attacks and other DNS record types</a></h1>
 <p id="rfc.section.5.p.1">This section discusses how a SHA-1 collision attack can be used with various DNS record types. For an RRtype to be suitable it needs to have a large RDATA with basically no internal structure, to accommodate the collision blocks, which are 588 bytes long in the best attack on SHA-1 at the time of writing <a href="#SHA-mbles">[SHA-mbles]</a>.</p>
 <p id="rfc.section.5.p.2">There are a number of weaknesses that make a collision attack easier to carry out, or which make the consequences of an attack more severe. This section describes some mitigations for these weaknesses, but note that these mitigations do not prevent collision attacks. The main defence is to upgrade zones to a secure algorithm (<a href="#deprecate">Section 2</a>) and in many cases that will be easier than the additional mitigations outlined below.</p>
@@ -754,7 +759,31 @@ message-2:  | prefix-2 | collide-2 | suffix |
 <p id="rfc.section.5.3.p.3">The length of an SSHFP record is implied by its fingerprint type field, but they can be used in collision attacks if the length is not strictly checked, or if unknown fingerprint types are allowed.</p>
 <p id="rfc.section.5.3.p.4">Authoritative DNS servers MAY reject SSHFP records with unknown fingerprint types or mismatched lengths in DNS UPDATEs and zone files. SSH clients MAY reject an entire SSHFP RRset if any record has a fingerprint longer than 64 bytes. (Assuming that fingerprints longer than 512 bits do not make sense.)</p>
 <h1 id="rfc.section.5.4"><a href="#rfc.section.5.4">5.4.</a> <a href="#dnskey-records" id="dnskey-records">DNSKEY records</a></h1>
+<p id="rfc.section.5.4.p.1">There are a couple of DNSSEC key management models that can make the consequences of a collision attack worse.</p>
+<h1 id="rfc.section.5.4.1"><a href="#rfc.section.5.4.1">5.4.1.</a> <a href="#shared-keys" id="shared-keys">Shared keys</a></h1>
+<p id="rfc.section.5.4.1.p.1">Normally each zone has its own DNSSEC keys, so a collision attack only works when the attacker's inoccuous and malicious records are in the same zone.</p>
+<p id="rfc.section.5.4.1.p.2">Some DNSSEC deployments share the same keys across multiple zones.  This allows an attacker to target names in any zone that uses the same key. For example, if this is a multi-tenant hosting environment, the attacker could sign up with their own domain and use that to perform collision attacks against other customers on the same platform.</p>
+<p id="rfc.section.5.4.1.p.3">DNS hosting services and DNSSEC signing software SHOULD NOT allow keys to be shared between multiple zones.</p>
+<h1 id="rfc.section.5.4.2"><a href="#rfc.section.5.4.2">5.4.2.</a> <a href="#combined-signing-keys" id="combined-signing-keys">Combined signing keys</a></h1>
+<p id="rfc.section.5.4.2.p.1">The traditional DNSSEC setup has two keys for a zone: a key-signing key (KSK) that is only used to sign the zone's DNSKEY RRset; and a zone-signing key (ZSK) which signs the other records in the zone.</p>
+<p id="rfc.section.5.4.2.p.2">There is a simpler setup in which a zone has only one key: a combined signing key (CSK) which signs all the records in the zone.</p>
+<p id="rfc.section.5.4.2.p.3">The DNSKEY RRset is a huge target in a zone that is vulnerable to collision attacks: if the attacker can get their own public key into a signed DNSKEY RRset then one successful collision attack can be used to spoof any record in the zone.</p>
+<p id="rfc.section.5.4.2.p.4">In a zone with split ZSK/KSK, the DNSKEY RRset is only trusted if it is signed by the KSK, but collision attacks can only obtain a RRset signed by the ZSK.</p>
+<p id="rfc.section.5.4.2.p.5">In a zone with a CSK the attacker can obtain a malicious trusted DNSKEY RRset using a collision attack.</p>
+<p id="rfc.section.5.4.2.p.6">DNS hosting services and DNSSEC signing software SHOULD encourage split ZSK/KSK configurations.</p>
 <h1 id="rfc.section.5.5"><a href="#rfc.section.5.5">5.5.</a> <a href="#ds-records" id="ds-records">DS records</a></h1>
+<p id="rfc.section.5.5.p.1">Top-level domains are the most prominent example of zones that can be updated by many different clients from mutually antagonistic organizations.</p>
+<p id="rfc.section.5.5.p.2">TLDs are typically updated via EPP <a href="#RFC5730">[RFC5730]</a>. The only delegation RRtype it might be possible to use for collision attacks are DS records. (The other delegation records, NS and glue addresses, are not signed and their syntax is too constrained.)</p>
+<p id="rfc.section.5.5.p.3">Collision attacks using DS records SHOULD be prevented as follows:</p>
+<p/>
+
+<ul>
+  <li>Unknown DS digest types are rejected;</li>
+  <li>DS records are required to have the correct length for their digest type;</li>
+  <li>Alternatively, instead of using client-generated DS records, the registry accepts DNSKEY records and generates the DS records.</li>
+</ul>
+
+<p> </p>
 <h1 id="rfc.section.6"><a href="#rfc.section.6">6.</a> <a href="#otherr" id="otherr">Other uses of SHA-1 in the DNS</a></h1>
 <h1 id="rfc.section.6.1"><a href="#rfc.section.6.1">6.1.</a> <a href="#ds-and-cds-records" id="ds-and-cds-records">DS and CDS records</a></h1>
 <p id="rfc.section.6.1.p.1">A DS or CDS record securely identifies a DNSKEY record using a cryptographic digest (<a href="#RFC4034">[RFC4034]</a> section 5). One of the digest types is SHA-1. It is deprecated by <a href="#RFC8624">[RFC8624]</a>.</p>
@@ -856,6 +885,12 @@ message-2:  | prefix-2 | collide-2 | suffix |
         <b id="RFC5155">[RFC5155]</b>
       </td>
       <td class="top"><a>Laurie, B.</a>, <a>Sisson, G.</a>, <a>Arends, R.</a> and <a>D. Blacka</a>, "<a href="http://tools.ietf.org/html/rfc5155">DNS Security (DNSSEC) Hashed Authenticated Denial of Existence</a>", RFC 5155, DOI 10.17487/RFC5155, March 2008.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="RFC5730">[RFC5730]</b>
+      </td>
+      <td class="top"><a>Hollenbeck, S.</a>, "<a href="http://tools.ietf.org/html/rfc5730">Extensible Provisioning Protocol (EPP)</a>", STD 69, RFC 5730, DOI 10.17487/RFC5730, August 2009.</td>
     </tr>
     <tr>
       <td class="reference">

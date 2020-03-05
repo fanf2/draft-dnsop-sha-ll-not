@@ -78,6 +78,8 @@ Table of Contents
      5.2.  CAA records
      5.3.  SSHFP records
      5.4.  DNSKEY records
+       5.4.1.  Shared keys
+       5.4.2.  Combined signing keys
      5.5.  DS records
    6.  Other uses of SHA-1 in the DNS
      6.1.  DS and CDS records
@@ -399,6 +401,12 @@ Table of Contents
    validity period is 1 week.  For example, set the expiration time to
    the signing time plus 75% of the validity period plus the entropy.
 
+   A signer SHOULD change its signature validity times frequently, for
+   example, different times for each RRset, or different times each
+   second.  This is so that an attacker cannot observe the signer's
+   current validity period and perform a collision attack before the
+   period changes.
+
 5.  Collision attacks and other DNS record types
 
    This section discusses how a SHA-1 collision attack can be used with
@@ -490,7 +498,69 @@ Table of Contents
 
 5.4.  DNSKEY records
 
+   There are a couple of DNSSEC key management models that can make the
+   consequences of a collision attack worse.
+
+5.4.1.  Shared keys
+
+   Normally each zone has its own DNSSEC keys, so a collision attack
+   only works when the attacker's inoccuous and malicious records are in
+   the same zone.
+
+   Some DNSSEC deployments share the same keys across multiple zones.
+   This allows an attacker to target names in any zone that uses the
+   same key.  For example, if this is a multi-tenant hosting
+   environment, the attacker could sign up with their own domain and use
+   that to perform collision attacks against other customers on the same
+   platform.
+
+   DNS hosting services and DNSSEC signing software SHOULD NOT allow
+   keys to be shared between multiple zones.
+
+5.4.2.  Combined signing keys
+
+   The traditional DNSSEC setup has two keys for a zone: a key-signing
+   key (KSK) that is only used to sign the zone's DNSKEY RRset; and a
+   zone-signing key (ZSK) which signs the other records in the zone.
+
+   There is a simpler setup in which a zone has only one key: a combined
+   signing key (CSK) which signs all the records in the zone.
+
+   The DNSKEY RRset is a huge target in a zone that is vulnerable to
+   collision attacks: if the attacker can get their own public key into
+   a signed DNSKEY RRset then one successful collision attack can be
+   used to spoof any record in the zone.
+
+   In a zone with split ZSK/KSK, the DNSKEY RRset is only trusted if it
+   is signed by the KSK, but collision attacks can only obtain a RRset
+   signed by the ZSK.
+
+   In a zone with a CSK the attacker can obtain a malicious trusted
+   DNSKEY RRset using a collision attack.
+
+   DNS hosting services and DNSSEC signing software SHOULD encourage
+   split ZSK/KSK configurations.
+
 5.5.  DS records
+
+   Top-level domains are the most prominent example of zones that can be
+   updated by many different clients from mutually antagonistic
+   organizations.
+
+   TLDs are typically updated via EPP [RFC5730].  The only delegation
+   RRtype it might be possible to use for collision attacks are DS
+   records.  (The other delegation records, NS and glue addresses, are
+   not signed and their syntax is too constrained.)
+
+   Collision attacks using DS records SHOULD be prevented as follows:
+
+   o  Unknown DS digest types are rejected;
+
+   o  DS records are required to have the correct length for their
+      digest type;
+
+   o  Alternatively, instead of using client-generated DS records, the
+      registry accepts DNSKEY records and generates the DS records.
 
 6.  Other uses of SHA-1 in the DNS
 
@@ -656,6 +726,10 @@ Table of Contents
               Security (DNSSEC) Hashed Authenticated Denial of
               Existence", RFC 5155, DOI 10.17487/RFC5155, March 2008,
               <https://www.rfc-editor.org/info/rfc5155>.
+
+   [RFC5730]  Hollenbeck, S., "Extensible Provisioning Protocol (EPP)",
+              STD 69, RFC 5730, DOI 10.17487/RFC5730, August 2009,
+              <https://www.rfc-editor.org/info/rfc5730>.
 
    [RFC6376]  Crocker, D., Ed., Hansen, T., Ed., and M. Kucherawy, Ed.,
               "DomainKeys Identified Mail (DKIM) Signatures", STD 76,

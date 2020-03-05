@@ -5,7 +5,7 @@ workgroup       = "DNS Operations"
 area            = "Operations and Management"
 submissiontype  = "IETF"
 ipr             = "trust200902"
-date            = 2020-03-05T18:55:00Z
+date            = 2020-03-05T20:20:16Z
 keyword         = [
     "DNS",
     "SHA-1",

@@ -356,6 +356,11 @@ to about 25% of the nominal validity period. For instance, 19 bits
 the validity period is 1 week. For example, set the expiration time
 to the signing time plus 75% of the validity period plus the
 entropy.</t>
+<t>A signer SHOULD change its signature validity times frequently, for
+example, different times for each RRset, or different times each
+second. This is so that an attacker cannot observe the signer's
+current validity period and perform a collision attack before the
+period changes.</t>
 </section>
 </section>
 
@@ -438,9 +443,60 @@ longer than 512 bits do not make sense.)</t>
 </section>
 
 <section anchor="dnskey-records" title="DNSKEY records">
+<t>There are a couple of DNSSEC key management models that can make the
+consequences of a collision attack worse.</t>
+
+<section anchor="shared-keys" title="Shared keys">
+<t>Normally each zone has its own DNSSEC keys, so a collision attack only
+works when the attacker's inoccuous and malicious records are in the
+same zone.</t>
+<t>Some DNSSEC deployments share the same keys across multiple zones.
+This allows an attacker to target names in any zone that uses the same
+key. For example, if this is a multi-tenant hosting environment, the
+attacker could sign up with their own domain and use that to perform
+collision attacks against other customers on the same platform.</t>
+<t>DNS hosting services and DNSSEC signing software SHOULD NOT allow keys
+to be shared between multiple zones.</t>
+</section>
+
+<section anchor="combined-signing-keys" title="Combined signing keys">
+<t>The traditional DNSSEC setup has two keys for a zone: a key-signing
+key (KSK) that is only used to sign the zone's DNSKEY RRset; and a
+zone-signing key (ZSK) which signs the other records in the zone.</t>
+<t>There is a simpler setup in which a zone has only one key: a combined
+signing key (CSK) which signs all the records in the zone.</t>
+<t>The DNSKEY RRset is a huge target in a zone that is vulnerable to
+collision attacks: if the attacker can get their own public key into a
+signed DNSKEY RRset then one successful collision attack can be used
+to spoof any record in the zone.</t>
+<t>In a zone with split ZSK/KSK, the DNSKEY RRset is only trusted if it
+is signed by the KSK, but collision attacks can only obtain a RRset
+signed by the ZSK.</t>
+<t>In a zone with a CSK the attacker can obtain a malicious trusted
+DNSKEY RRset using a collision attack.</t>
+<t>DNS hosting services and DNSSEC signing software SHOULD encourage
+split ZSK/KSK configurations.</t>
+</section>
 </section>
 
 <section anchor="ds-records" title="DS records">
+<t>Top-level domains are the most prominent example of zones that can be
+updated by many different clients from mutually antagonistic
+organizations.</t>
+<t>TLDs are typically updated via EPP <xref target="RFC5730"></xref>. The only delegation
+RRtype it might be possible to use for collision attacks are DS
+records. (The other delegation records, NS and glue addresses, are not
+signed and their syntax is too constrained.)</t>
+<t>Collision attacks using DS records SHOULD be prevented as follows:</t>
+<t>
+<list style="symbols">
+<t>Unknown DS digest types are rejected;</t>
+<t>DS records are required to have the correct length for their
+digest type;</t>
+<t>Alternatively, instead of using client-generated DS records, the
+registry accepts DNSKEY records and generates the DS records.</t>
+</list>
+</t>
 </section>
 </section>
 
@@ -539,23 +595,32 @@ to upgrade to a secure algorithm.</t>
 
 <back>
 <references title="Normative References">
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8624.xml"?>
 <?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"?>
 <?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4034.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8624.xml"?>
 </references>
 <references title="Informative References">
-<reference anchor='SHA-mbles' target='https://sha-mbles.github.io/'>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.5730.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6594.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-dnsop-rfc2845bis.xml"?>
+<reference anchor='Wang2005' target='https://link.springer.com/chapter/10.1007/11535218_2'>
   <front>
-    <title>
-	  SHA-1 is a Shambles:
-	  First Chosen-Prefix Collision on SHA-1
-	  and Application to the PGP Web of Trust
-	</title>
-	<author initials='G.' surname='Leurent' fullname='Gaëtan Leurent'/>
-	<author initials='T.' surname='Peyrin' fullname='Thomas Peyrin'/>
-	<date month='January' year='2020'/>
+    <title>Finding Collisions in the Full SHA-1</title>
+	<author initials='X.' surname='Wang' fullname='Xiaoyun Wang'/>
+	<author initials='Y.' surname='Yin' fullname='Yiqun Lisa Yin'/>
+	<author initials='H.' surname='Yu' fullname='Hongbo Yu'/>
+    <date year='2005'/>
   </front>
 </reference>
+<reference anchor='DNSKEY-IANA' target='http://www.iana.org/assignments/dns-sec-alg-numbers'>
+  <front>
+    <title>Domain Name System Security (DNSSEC) Algorithm Numbers</title>
+	<author><organization>IANA</organization></author>
+    <date year='2017'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8555.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6844.xml"?>
 <reference anchor='NIST2006' target='https://csrc.nist.gov/News/2006/NIST-Comments-on-Cryptanalytic-Attacks-on-SHA-1'>
   <front>
     <title>NIST Comments on Cryptanalytic Attacks on SHA-1</title>
@@ -577,22 +642,6 @@ to upgrade to a secure algorithm.</t>
 	<date month='February' year='2017'/>
   </front>
 </reference>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-dnsop-rfc2845bis.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7672.xml"?>
-<reference anchor='Wang2005' target='https://link.springer.com/chapter/10.1007/11535218_2'>
-  <front>
-    <title>Finding Collisions in the Full SHA-1</title>
-	<author initials='X.' surname='Wang' fullname='Xiaoyun Wang'/>
-	<author initials='Y.' surname='Yin' fullname='Yiqun Lisa Yin'/>
-	<author initials='H.' surname='Yu' fullname='Hongbo Yu'/>
-    <date year='2005'/>
-  </front>
-</reference>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8555.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6376.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4255.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7208.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6594.xml"?>
 <reference anchor='Cochran2007' target='https://eprint.iacr.org/2007/474'>
   <front>
     <title>Notes on the Wang et al. 2^63 SHA-1 Differential Path</title>
@@ -610,6 +659,29 @@ to upgrade to a secure algorithm.</t>
 	<date year='2010'/>
   </front>
 </reference>
+<reference anchor='CABforum2014' target='https://cabforum.org/2014/10/16/ballot-118-sha-1-sunset/'>
+  <front>
+    <title>Ballot 118 - SHA-1 Sunset</title>
+	<author><organization>CA/Browser Forum</organization></author>
+	<date month='October' year='2014'/>
+  </front>
+</reference>
+<reference anchor='SHA-mbles' target='https://sha-mbles.github.io/'>
+  <front>
+    <title>
+	  SHA-1 is a Shambles:
+	  First Chosen-Prefix Collision on SHA-1
+	  and Application to the PGP Web of Trust
+	</title>
+	<author initials='G.' surname='Leurent' fullname='Gaëtan Leurent'/>
+	<author initials='T.' surname='Peyrin' fullname='Thomas Peyrin'/>
+	<date month='January' year='2020'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.5155.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6376.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4255.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7672.xml"?>
 <reference anchor='NIST-SP800-131A' target='https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-131a.pdf'>
   <front>
     <title>Recommendation for Transitioning the Use of CryptographicAlgorithms and Key Lengths</title>
@@ -619,22 +691,7 @@ to upgrade to a secure algorithm.</t>
 	<date month='January' year='2011'/>
   </front>
 </reference>
-<reference anchor='DNSKEY-IANA' target='http://www.iana.org/assignments/dns-sec-alg-numbers'>
-  <front>
-    <title>Domain Name System Security (DNSSEC) Algorithm Numbers</title>
-	<author><organization>IANA</organization></author>
-    <date year='2017'/>
-  </front>
-</reference>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6844.xml"?>
-<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.5155.xml"?>
-<reference anchor='CABforum2014' target='https://cabforum.org/2014/10/16/ballot-118-sha-1-sunset/'>
-  <front>
-    <title>Ballot 118 - SHA-1 Sunset</title>
-	<author><organization>CA/Browser Forum</organization></author>
-	<date month='October' year='2014'/>
-  </front>
-</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7208.xml"?>
 <reference anchor='SHAppening' target='https://sites.google.com/site/itstheshappening/'>
   <front>
     <title>Freestart collision for full SHA-1</title>
