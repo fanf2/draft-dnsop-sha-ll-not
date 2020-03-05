@@ -15,7 +15,7 @@ updates         = [ 8624 ]
 
 [seriesInfo]
 name            = "Internet-Draft"
-value           = "draft-fanf-dnsop-sha-mbles"
+value           = "draft-fanf-dnsop-sha-ll-not"
 status          = "standard"
 
 [[author]]

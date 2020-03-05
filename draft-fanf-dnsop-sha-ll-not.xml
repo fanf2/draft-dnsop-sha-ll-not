@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- name="GENERATOR" content="github.com/mmarkdown/mmark Mmark Markdown Processor - mmark.nl" -->
+<!DOCTYPE rfc SYSTEM 'rfc2629.dtd' []>
+<rfc ipr="trust200902" category="std" xml:lang="en" consensus="yes" updates="8624" docName="draft-fanf-dnsop-sha-ll-not">
+<?rfc toc="yes"?><?rfc symrefs="yes"?><?rfc sortrefs="yes"?><?rfc compact="yes"?><?rfc subcompact="no"?><?rfc comments="no"?>
+<front>
+<title abbrev="DNSSEC vs collision attacks">Hardening DNSSEC against collision weaknesses in SHA-1 and other cryptographic hash algorithms</title><author initials="T." surname="Finch" fullname="Tony Finch"><organization>University of Cambridge</organization><address><postal><street></street>
+<street>University Information Services</street>
+<street>Roger Needham Building</street>
+<street>7 JJ Thomson Avenue</street>
+<city>Cambridge</city>
+<code>CB3 0RB</code>
+<country>England</country>
+</postal><email>dot@dotat.at</email>
+</address></author>
+<date year="2020" month="February" day="27"></date>
+<area>Operations and Management</area><workgroup>DNS Operations</workgroup><keyword>DNS</keyword>
+<keyword>SHA-1</keyword>
+<keyword>RRSIG</keyword>
+
+<abstract><t>DNSSEC deployments have often used the SHA-1 cryptographic hash
+algorithm to provide authentication of DNS data. This document
+explains why SHA-1 is no longer secure for this purpose, and
+deprecates its use in DNSSEC signatures. This document updates
+RFC 8624.</t>
+</abstract>
+
+</front>
+
+<middle>
+
+<section anchor="introduction" title="Introduction">
+<t>Since 2005, SHA-1 has been known to be much weaker than it was
+designed to be. Over the last 5 years there has been a series of
+increasingly powerful demonstrations that SHA-1's weaknesses can be
+exploited in practice. In January 2020, Gaëtan Leurent and Thomas
+Peyrin announced a chosen-prefix collision for SHA-1 [SHA-mbles]. This
+was the first practical break of SHA-1 as used in cryptographic
+signatures.</t>
+<t>DNSSEC uses cryptographic signatures to authenticate DNS data. Its
+signature algorithms <xref target="DNSKEY-IANA"></xref> include RSASHA1 (5) and
+RSASHA1-NSEC3-SHA1 (7) which are vulnerable to chosen-prefix
+collisions in SHA-1, as described in <xref target="collide"></xref>. This document
+deprecates these vulnerable algorithms (<xref target="deprecate"></xref>).</t>
+<t>SHA-1 has been deprecated in other situations for several years (see
+<xref target="timeline"></xref>). This document's timetable for deprecating SHA-1 in
+DNSSEC (<xref target="deprecate"></xref>) is based on those examples, adapted for the
+particulars of the DNS. <xref target="seccons"></xref> discusses the trade-offs between
+speed and security.</t>
+<t>A collision attack can be used against DNSSEC in a number of ways,
+some of which are explored in <xref target="attack"></xref>. Certain weaknesses in the way
+DNSSEC is sometimes deployed can make collision attacks easier to
+carry out, or make their consequences more severe. Although the only
+sure way to protect against collision attacks is to use a secure
+algorithm (<xref target="deprecate"></xref>), <xref target="harden"></xref> and <xref target="attack"></xref> outline some partial
+mitigations.</t>
+<t>The DNS uses SHA-1 for a number of other less vulnerable purposes, as
+outlined in section <xref target="otherr"></xref>.</t>
+
+<section anchor="terminology" title="Terminology">
+<t>The key words MUST, MUST NOT, REQUIRED, SHALL,
+SHALL NOT, SHOULD, SHOULD NOT, RECOMMENDED, MAY,
+and OPTIONAL in this document are to be interpreted as described in
+<xref target="RFC2119"></xref>.</t>
+</section>
+</section>
+
+<section anchor="deprecate" title="Deprecating SHA-1 in DNSSEC">
+<t>The following table lists the implementation recommendations for
+DNSKEY algorithms <xref target="DNSKEY-IANA"></xref>. The change from <xref target="RFC8624"></xref>
+section 3.1 is to deprecate algorithms 5 and 7.</t>
+<texttable>
+<ttcol>No.</ttcol>
+<ttcol>Mnemonic</ttcol>
+<ttcol>DNSSEC Signing</ttcol>
+<ttcol>DNSSEC Validation</ttcol>
+
+
+<c>1</c>
+<c>RSAMD5</c>
+<c>MUST NOT</c>
+<c>MUST NOT</c>
+
+<c>3</c>
+<c>DSA</c>
+<c>MUST NOT</c>
+<c>MUST NOT</c>
+
+<c>5</c>
+<c>RSASHA1</c>
+<c>MUST NOT</c>
+<c>MUST NOT after 2021</c>
+
+<c>6</c>
+<c>DSA-NSEC3-SHA1</c>
+<c>MUST NOT</c>
+<c>MUST NOT</c>
+
+<c>7</c>
+<c>RSASHA1-NSEC3-SHA1</c>
+<c>MUST NOT</c>
+<c>MUST NOT after 2021</c>
+
+<c>8</c>
+<c>RSASHA256</c>
+<c>MUST</c>
+<c>MUST</c>
+
+<c>10</c>
+<c>RSASHA512</c>
+<c>NOT RECOMMENDED</c>
+<c>MUST</c>
+
+<c>12</c>
+<c>ECC-GOST</c>
+<c>MUST NOT</c>
+<c>MAY</c>
+
+<c>13</c>
+<c>ECDSAP256SHA256</c>
+<c>MUST</c>
+<c>MUST</c>
+
+<c>14</c>
+<c>ECDSAP384SHA384</c>
+<c>MAY</c>
+<c>RECOMMENDED</c>
+
+<c>15</c>
+<c>ED25519</c>
+<c>RECOMMENDED</c>
+<c>RECOMMENDED</c>
+
+<c>16</c>
+<c>ED448</c>
+<c>MAY</c>
+<c>RECOMMENDED</c>
+
+</texttable><t>The following subsections have recommended timelines for deprecating
+algorithms 5 and 7 in specific situations.</t>
+
+<section anchor="dnssec-signing-software" title="DNSSEC signing software">
+<t>DNSSEC key management and zone signing software MUST remove support
+for algorithms 5 and 7 in their next feature release.</t>
+</section>
+
+<section anchor="dns-hosting-services" title="DNS hosting services">
+<t>Authoritative DNS hosting services that include DNSSEC signing as part
+of the service SHOULD NOT generate a new key with algorithms 5 or 7
+for a zone that does not already have a key with the same algorithm.
+They MUST NOT do so after the end of 2020.</t>
+<t>Zones signed with algorithms 5 or 7 SHOULD be rolled over to a
+mandatory or recommended algorithm as soon as possible. The rollovers
+MUST be complete before the end of 2021.</t>
+</section>
+
+<section anchor="dnssec-validating-software" title="DNSSEC validating software">
+<t>Validating resolvers SHOULD have a build-time or run-time option to
+disable selected DNSKEY algorithms, that is, to treat them as unknown
+or insecure.</t>
+<t>Algorithms 5 and 7 MUST be disabled in 2022 at the latest. If SHA-1
+becomes significantly weaker before then, Algorithms 5 and 7 MUST be
+disabled in a security patch release.</t>
+</section>
+
+<section anchor="dns-resolver-services" title="DNS resolver services">
+<t>Validating resolvers MUST treat algorithms 5 and 7 as unknown or
+insecure after the start of 2022, or earlier if SHA-1 becomes
+significantly weaker before then.</t>
+</section>
+</section>
+
+<section anchor="collide" title="Collision attacks against DNSSEC">
+</section>
+
+<section anchor="harden" title="Collision attacks and RRSIG records">
+</section>
+
+<section anchor="attack" title="Collision attacks and other DNS record types">
+</section>
+
+<section anchor="otherr" title="Other uses of SHA-1 in the DNS">
+
+<section anchor="ds-and-cds-records" title="DS and CDS records">
+<t>A DS or CDS record securely identifies a DNSKEY record using a
+cryptographic digest (<xref target="RFC4034"></xref> section 5). One of the digest types
+is SHA-1. It is deprecated by <xref target="RFC8624"></xref>.</t>
+<t>For this purpose, the digest needs preimage security, which SHA-1
+still has, and collision attacks do not affect it.</t>
+</section>
+
+<section anchor="nsec3-records" title="NSEC3 records">
+<t>NSEC3 is an alternative mechanism for authenticated denial of
+existence in DNSSEC. It is based on SHA-1 hashes of domain names. The
+NSEC3 specification <xref target="RFC5155"></xref> discusses collisions in some detail.</t>
+<t>NSEC3 can be attacked with an identical-prefix collision, which is
+simpler than the chosen-prefix collisions that are the main subject
+of this document. The best collision known at the time of writing
+<xref target="SHAttered"></xref> uses two SHA-1 input blocks (128 bytes) so a collision
+could in principle be made to fit into a domain name for an attack
+on NSEC3. However it will be difficult to make the colliding domain
+names conform to host name syntax, and the attack will be futile
+because the signer can defeat it by changing its NSEC3 salt
+(<xref target="RFC5155"></xref> section C.2.1).</t>
+</section>
+
+<section anchor="sshfp-records" title="SSHFP records">
+<t>An SSHFP record securely identifies an SSH server public key using a
+cryptographic digest <xref target="RFC4255"></xref>. Although SSHFP SHA-1 digests have
+not yet been deprecated, SHA-256 is preferred <xref target="RFC6594"></xref>.</t>
+<t>For SSHFP records the digest needs preimage security, which SHA-1
+still has, and collision attacks do not affect it.</t>
+</section>
+
+<section anchor="tsig-authentication" title="TSIG authentication">
+<t>TSIG is a DNS extension for secret-key transaction authentication
+<xref target="I-D.ietf-dnsop-rfc2845bis"></xref>. Its <spanx style="verb">hmac-sha1</spanx> algorithm is
+deprecated. Collision attacks do not affect HMAC SHA-1.</t>
+</section>
+</section>
+
+<section anchor="seccons" title="Security considerations">
+<t>We find ourselves in an awkward and embarrassing situation. As
+<xref target="timeline"></xref> shows, there has been plenty of warning about the
+weakness of SHA-1. Other parts of the industry started making
+efforts to deprecate it years ago. But DNSSEC has been complacent.</t>
+<t>At the time of writing, there are 1516 top-level domains, of which
+1102 use secure DNSSEC algorithms, 274 use algorithms 5 or 7 (RSA
+SHA-1), and 140 are insecure. In the reverse DNS, 3 RIRs use secure
+DNSSEC algorithms, 2 RIRs use algorithm 5, and many of the non-RIR
+legacy delegations are insecure.</t>
+
+<section anchor="staying-secure" title="Staying secure">
+<t>There are still many domains that depend on SHA-1 to secure
+applications that use DNSSEC, such as issuing TLS certificates
+<xref target="RFC6844"></xref> <xref target="RFC8555"></xref>, sending inter-domain email <xref target="RFC7672"></xref>,
+and authenticating SSH servers <xref target="RFC4255"></xref>.</t>
+<t>Some applications use the &quot;authenticated data&quot; (AD bit) signal from
+DNSSEC to make security decisions, and will fail if it unexpectedly
+switches off. Other applications use DNSSEC passively and will
+silently go insecure. In either case we would prefer them to
+continue working as if secure, as long as SHA-1 is still
+significantly better than insecure DNS.</t>
+</section>
+
+<section anchor="when-to-declare-sha-1-insecure" title="When to declare SHA-1 insecure">
+<t>At the time of writing, a SHA-1 chosen-prefix collision costs less
+than US$100,000 in computer time, takes about a month, and requires
+the attention of expert cryptanalysts. Attacks seem to be getting
+better by a factor of 3 or 4 per year.</t>
+<t>There is not much time before collisions become affordable, and
+possible for non-experts to calculate. <xref target="deprecate"></xref> hopes this will
+not happen within the next 2 years.</t>
+<t>This 2 year guess is likely to be too optimistic, so DNSSEC
+validators need to be prepared to disable support for SHA-1 by
+configuration change or security patch as soon as a significantly
+improved attack on SHA-1 is announced.</t>
+</section>
+
+<section anchor="avoiding-unwanted-insecurity" title="Avoiding unwanted insecurity">
+<t>The reason for not deprecating SHA-1 immediately is to allow time to
+perform algorithm rollovers, so that zones will continue to be secure.</t>
+<t>Abruptly forcing SHA-1 zones to be treated as insecure may encourage
+their operators to leave them insecure, instead of encouraging them
+to upgrade to a secure algorithm.</t>
+</section>
+</section>
+
+<section anchor="iana-considerations" title="IANA considerations">
+<t>This document has no IANA actions.</t>
+</section>
+
+</middle>
+
+<back>
+<references title="Normative References">
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4034.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8624.xml"?>
+</references>
+<references title="Informative References">
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4255.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6944.xml"?>
+<reference anchor='CABforum2014' target='https://cabforum.org/2014/10/16/ballot-118-sha-1-sunset/'>
+  <front>
+    <title>Ballot 118 - SHA-1 Sunset</title>
+	<author><organization>CA/Browser Forum</organization></author>
+	<date month='October' year='2014'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8555.xml"?>
+<reference anchor='DNSKEY-IANA' target='http://www.iana.org/assignments/dns-sec-alg-numbers'>
+  <front>
+    <title>Domain Name System Security (DNSSEC) Algorithm Numbers</title>
+	<author><organization>IANA</organization></author>
+    <date year='2017'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.5155.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-dnsop-rfc2845bis.xml"?>
+<reference anchor='ROOT-DNSSEC' target='https://www.root-dnssec.org/'>
+  <front>
+    <title>Information about DNSSEC for the Root Zone</title>
+	<author><organization abbrev="ICANN">
+	  Internet Corporation For Assigned Names and Numbers
+	</organization></author>
+	<author><organization>VeriSign, Inc.</organization></author>
+	<date year='2010'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6594.xml"?>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7672.xml"?>
+<reference anchor='Wang2005' target='https://link.springer.com/chapter/10.1007/11535218_2'>
+  <front>
+    <title>Finding Collisions in the Full SHA-1</title>
+	<author initials='X.' surname='Wang' fullname='Xiaoyun Wang'/>
+	<author initials='Y.' surname='Yin' fullname='Yiqun Lisa Yin'/>
+	<author initials='H.' surname='Yu' fullname='Hongbo Yu'/>
+    <date year='2005'/>
+  </front>
+</reference>
+<reference anchor='Cochran2007' target='https://eprint.iacr.org/2007/474'>
+  <front>
+    <title>Notes on the Wang et al. 2^63 SHA-1 Differential Path</title>
+	<author initials='M.' surname='Cochran' fullname='Martin Cochran'/>
+	<date year='2007'/>
+  </front>
+</reference>
+<reference anchor='NIST-SP800-131A' target='https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-131a.pdf'>
+  <front>
+    <title>Recommendation for Transitioning the Use of CryptographicAlgorithms and Key Lengths</title>
+	<author><organization abbrev='NIST'>
+	  National Institute of Standards and Technology
+	</organization></author>
+	<date month='January' year='2011'/>
+  </front>
+</reference>
+<reference anchor='SHAppening' target='https://sites.google.com/site/itstheshappening/'>
+  <front>
+    <title>Freestart collision for full SHA-1</title>
+	<author initials='M.' surname='Stevens' fullname='Marc Stevens'/>
+	<author initials='P.' surname='Karpman' fullname='Pierre Karpman'/>
+	<author initials='T.' surname='Peyrin' fullname='Thomas Peyrin'/>
+	<date month='October' year='2015'/>
+  </front>
+</reference>
+<reference anchor='SHA-mbles' target='https://sha-mbles.github.io/'>
+  <front>
+    <title>
+	  SHA-1 is a Shambles:
+	  First Chosen-Prefix Collision on SHA-1
+	  and Application to the PGP Web of Trust
+	</title>
+	<author initials='G.' surname='Leurent' fullname='Gaëtan Leurent'/>
+	<author initials='T.' surname='Peyrin' fullname='Thomas Peyrin'/>
+	<date month='January' year='2020'/>
+  </front>
+</reference>
+<reference anchor='SHAttered' target='https://shattered.io/'>
+  <front>
+    <title>The first collision for full SHA-1</title>
+	<author initials='M.' surname='Stevens' fullname='Marc Stevens'/>
+	<author initials='E.' surname='Bursztein' fullname='Elie Bursztein'/>
+	<author initials='P.' surname='Karpman' fullname='Pierre Karpman'/>
+	<author initials='A.' surname='Albertini' fullname='Ange Albertini'/>
+	<author initials='Y.' surname='Markov' fullname='Yarik Markov'/>
+	<date month='February' year='2017'/>
+  </front>
+</reference>
+<?rfc include="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6844.xml"?>
+<reference anchor='NIST2006' target='https://csrc.nist.gov/News/2006/NIST-Comments-on-Cryptanalytic-Attacks-on-SHA-1'>
+  <front>
+    <title>NIST Comments on Cryptanalytic Attacks on SHA-1</title>
+	<author><organization abbrev='NIST'>
+	  National Institute of Standards and Technology
+	</organization></author>
+	<date year='2006'/>
+  </front>
+</reference>
+</references>
+
+<section anchor="acknowledgments" title="Acknowledgments">
+<t>Thanks to Viktor Dukhovni for helpful discussions about the
+implications of the SHA-1 chosen-prefix collision.</t>
+</section>
+
+<section anchor="timeline" title="Timeline">
+<t>
+<list style="symbols">
+<t>2005: Theoretical 2^63 attack on SHA-1 <xref target="Wang2005"></xref> <xref target="Cochran2007"></xref></t>
+</list>
+</t>
+<t>
+<list style="symbols">
+<t>2006: NIST starts to deprecate SHA-1 <xref target="NIST2006"></xref></t>
+</list>
+</t>
+<t>
+<list style="symbols">
+<t>2010: DNS root zone signed with RSASHA256 <xref target="ROOT-DNSSEC"></xref></t>
+</list>
+</t>
+<t>
+<list style="symbols">
+<t>2011: NIST formally deprecates SHA-1 for digital signatures, and
+disallows it after 2013 <xref target="NIST-SP800-131A"></xref> (section 3)</t>
+</list>
+</t>
+<t>
+<list style="symbols">
+<t>2013: IETF recommends RSASHA1 for use in DNSSEC <xref target="RFC6944"></xref></t>
+<t>2014: CA/Browser forum sunsets SHA-1 in X.509 WebPKI certificates
+after 2015 <xref target="CABforum2014"></xref></t>
+</list>
+</t>
+<t>
+<list style="symbols">
+<t>2015: Free-start collision demonstrated in SHA-1 <xref target="SHAppening"></xref></t>
+</list>
+</t>
+<t>
+<list style="symbols">
+<t>2017: Identical-prefix collision demonstrated in SHA-1 <xref target="SHAttered"></xref></t>
+</list>
+</t>
+<t>
+<list style="symbols">
+<t>2019: IETF partially deprecates SHA-1 for use in DNSSEC <xref target="RFC8624"></xref></t>
+<t>2020: Chosen-prefix collision demonstrated in SHA-1 <xref target="SHA-mbles"></xref></t>
+</list>
+</t>
+</section>
+
+</back>
+
+</rfc>

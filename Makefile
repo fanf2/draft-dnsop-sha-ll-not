@@ -1,6 +1,6 @@
 MMARK=${GOPATH}/bin/mmark
 
-DRAFT=draft-fanf-dnsop-sha-mbles
+DRAFT=draft-fanf-dnsop-sha-ll-not
 
 OUT= ${DRAFT}.html ${DRAFT}.xml ${DRAFT}.txt
 

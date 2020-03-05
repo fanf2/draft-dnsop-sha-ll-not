@@ -27,12 +27,10 @@ The markdown source is converted to RFC XML format using `mmark`
 
   * https://github.com/mmarkdown/mmark
 
-  * https://mmark.nl/
-
 Plain text and HTML versions are generated from the XML using `xml2rfc`
 
   * https://xml2rfc.tools.ietf.org/
 
 The canonical version of this repository is
 
-  * https://github.com/fanf/draft-dnsop-sha-mbles
+  * https://github.com/fanf/draft-dnsop-sha-ll-not
