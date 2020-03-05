@@ -277,9 +277,87 @@ limitations:
     with each other, but they need to have the same total length.
 
 
-
-
 # Hardening RRSIG records {#harden}
+
+To perform a collision attack against DNSSEC, the attacker needs to
+know the RRSIG RDATA fields that the zone owner will use when
+signing the attacker's innoccuous records.
+
+The RRSIG RDATA fields are specified in [@!RFC4034] section 3.1.
+They are:
+
+  * Type covered: same as the TYPE of the innoccuous RRset.
+
+  * Algorithm: same as the algorithm of the zone's DNSKEY records,
+    which for a vulnerable zone will be 5 or 7.
+
+  * Labels: derived from the NAME of the innoccuous RRset.
+
+  * Original TTL: same as the TTL of the innoccuous RRset.
+
+  * Signature expiration: a time set by the signer.
+
+  * Signature inception: a time set by the signer.
+
+  * Key tag: obtained from one of the zone's DNSKEY records.
+
+  * Signer's name: the name of the zone's DNSKEY records.
+
+We can see that all of these fields are known to the attacker, apart
+from the inception and expiration times.
+
+## Predicting inception and expiration times
+
+There are a number of common ways for DNSSEC signers to set
+signature inception and expiration times:
+
+  * The times are known offsets from the moment a DNS update is
+    processed.
+
+  * The update time is rounded to a multiple of (for example) 24
+    hours and the signature times are known offsets from that.
+
+  * The zone is signed on a known schedule and the times are derived
+    from that schedule.
+
+So in many cases an attacker can predict all the RRSIG RDATA fields
+with little difficulty.
+
+## Unpredictable X.509 certificates
+
+(A brief diversion to provide some rationale for the next
+sub-section.)
+
+In 2008 a chosen-prefix collision attack against MD5 was used to
+obtain an illegitimate CA certificate signed by a commercial CA
+[ROGUE-CA]. A key part of this attack was to predict the serial
+number and validity period assigned by the commercial CA to the
+innocuous certificate so that its MD5 hash would collide with the
+malicious rogue CA certificate.
+
+Following this attack, certificate authorities started using random
+serial numbers instead of sequential numbers. In 2016 the CA/Browser
+forum baseline requirements were amended to increase the amount of
+randomness required from 20 bits to 64 bits [CABforum2016]. This
+extra hardening was in addition to deprecating SHA-1 [CABforum2014].
+
+## Less predictable RRSIG records
+
+In addition to deprecating SHA-1 ((#deprecate)), DNSSEC signers can
+provide extra protection against possible collision attacks by
+adding entropy to make RRSIG inception and expiration times less
+predictable.
+
+The inception time SHOULD include at least 12 bits of output from a
+CSPRNG. (2^12 seconds is slightly more than an hour.) For example,
+set the inception time to the signing time minus an hour minus the
+entropy.
+
+The expiration time SHOULD include output from a CSPRNG equivalent
+to about 25% of the nominal validity period. For instance, 19 bits
+if the validity period is 1 month, or 17 bits if the validity period
+is 1 week. For example, set the expiration time to the signing time
+plus 75% of the validity period plus the entropy.
 
 
 # Collision attacks and other DNS record types {#attack}
@@ -517,6 +595,28 @@ implications of the SHA-1 chosen-prefix collision.
     <title>Domain Name System Security (DNSSEC) Algorithm Numbers</title>
 	<author><organization>IANA</organization></author>
     <date year='2017'/>
+  </front>
+</reference>
+
+<reference anchor='ROGUE-CA' target='https://www.win.tue.nl/hashclash/rogue-ca/'>
+  <front>
+    <title>Creating a rogue CA certificate</title>
+	<author initials='A.' surname='Sotirov' fullname='Alexander Sotirov'/>
+	<author initials='M.' surname='Stevens' fullname='Marc Stevens'/>
+	<author initials='J.' surname='Appelbaum' fullname='Jacob Appelbaum'/>
+	<author initials='A.' surname='Lenstra' fullname='Arjen Lenstra'/>
+	<author initials='D.' surname='Molnar' fullname='David Molnar'/>
+	<author initials='D.' surname='Osvik' fullname='Dag Arne Osvik'/>
+	<author initials='B.' surname='de Weger' fullname='Benne de Weger'/>
+	<date month='December' year='2008'/>
+  </front>
+</reference>
+
+<reference anchor='CABforum2016' target='https://cabforum.org/2016/03/31/ballot-164/'>
+  <front>
+    <title>Ballot 164 - Certificate Serial Number Entropy</title>
+	<author><organization>CA/Browser Forum</organization></author>
+	<date month='September' year='2016'/>
   </front>
 </reference>
 
