@@ -69,7 +69,7 @@ SHA-1 has been deprecated in other situations for several years (see
 (#timeline)). This document's timetable for deprecating SHA-1 in
 DNSSEC ((#deprecate)) is based on those examples, adapted for the
 particulars of the DNS. (#seccons) discusses the trade-offs between
-speed and security.
+speedy deprecation and security.
 
 A collision attack can be used against DNSSEC in a number of ways,
 some of which are explored in (#attack). Certain weaknesses in the way
@@ -114,12 +114,10 @@ No. | Mnemonic           | DNSSEC Signing  | DNSSEC Validation
 The following subsections have recommended timelines for deprecating
 algorithms 5 and 7 in specific situations.
 
-
 ## DNSSEC signing software
 
 DNSSEC key management and zone signing software MUST remove support
 for algorithms 5 and 7 in their next feature release.
-
 
 ## DNS hosting services
 
@@ -132,7 +130,6 @@ Zones signed with algorithms 5 or 7 SHOULD be rolled over to a
 mandatory or recommended algorithm as soon as possible. The rollovers
 MUST be complete before the end of 2021.
 
-
 ## DNSSEC validating software
 
 Validating resolvers SHOULD have a build-time or run-time option to
@@ -143,7 +140,6 @@ Algorithms 5 and 7 MUST be disabled in 2022 at the latest. If SHA-1
 becomes significantly weaker before then, Algorithms 5 and 7 MUST be
 disabled in a security patch release.
 
-
 ## DNS resolver services
 
 Validating resolvers MUST treat algorithms 5 and 7 as unknown or
@@ -153,8 +149,137 @@ significantly weaker before then.
 
 # Collision attacks against DNSSEC {#collide}
 
+This section explains how collisions in cryptographic functions
+(such as SHA-1) can be used to break DNSSEC data authentication.
+(#attack) has some more specific examples of how this break can be
+used to mount attacks.
 
-# Collision attacks and RRSIG records {#harden}
+## Chosen-prefix collisions
+
+With hash functions like SHA-1, a chosen-prefix collision attack
+uses two messages that have a structure like this:
+
+```
+            +----------+-----------+--------+
+message-1:  | prefix-1 | collide-1 | suffix |
+            +----------+-----------+--------+
+
+            +----------+-----------+--------+
+message-2:  | prefix-2 | collide-2 | suffix |
+            +----------+-----------+--------+
+```
+
+The two prefixes are entirely under the attacker's control.
+
+The collision blocks are calculated to make the hashes collide. They
+look like binary junk and cannot be made to conform to any
+particular syntax. The collision blocks are 588 bytes long in the
+best attack on SHA-1 at the time of writing [@?SHA-mbles].
+
+The messages may need a suffix so that they are syntactically valid,
+but this must be the same in both messages.
+
+## Collision attacks and signatures
+
+A signature algorithm like RSASHA1 takes a cryptographic hash of the
+message (using SHA-1 in this case) and uses an asymmetric algorithm
+(RSA in this case) to turn the hash into a signature.
+
+If the hash function is vulnerable, like SHA-1, then an attacker can:
+
+  * construct two prefixes, one innocuous and one malicious;
+
+  * calculate collision blocks so the two messages have the same hash;
+
+  * submit the innocuous message to be signed by some authority;
+
+  * copy the signature from the innocious message to the malicious
+    message;
+
+  * use the signed malicious message to perform attacks that would
+    not be possible without it.
+
+The copied signature works on both the innocuous and malicious
+messages because their hashes match.
+
+It is usually less easy than this, because in most protocols part of
+the innocuous message is chosen by the signer, so the attacker needs
+to predict how the signer will work.
+
+## Breaking DNSSEC
+
+To use a collision attack against DNSSEC, the innoccuous and
+malicious messages are DNS RRsets.
+
+DNSSEC provides strong authentication for DNS data. Within the DNS,
+it prevents spoofing attacks and cache poisoning attacks. For
+applications that use the DNS, DNSSEC can provide strong
+authentication for application identifiers, such as a host name and
+associated public key or challenge/response. Breaking DNSSEC means
+subverting this authentication.
+
+If an attacker has even very limited access to update a DNS zone
+that uses SHA-1 (algorithm 5 or 7), the attacker can use a collision
+attack to gain control over other names in the same zone.
+
+Our attacker is able to update the DNS for certain innoccuous
+records. The zone owner signs the updated innoccuous records and
+publishes the new records and RRSIG in the zone. The attacker can
+then make a DNS query for the updated records, and copy the
+signature field from the innoccuous RRSIG into the signature field
+of the attacker's malicious RRSIG. The attacker can use the signed
+malicious RRset as part of a DNS spoofing or cache poisoning attack.
+(#attack) has some examples.
+
+## Collision attacks and RRSIG records
+
+When the attacker calculates the collision blocks, there is a bit
+more to the innoccuous and malicious messages than just the RRsets.
+They need to be in the format used for constructing RRSIG records
+specified in [@!RFC4034] section 3.1.8.1 and sketched in the diagram
+below:
+
+```
++------------------------------------+
+| RRSIG RDATA                        |
++------------------------------------+
+| NAME TYPE CLASS TTL RDLENGTH RDATA |
++------------------------------------+
+| ... more records ...               |
++------------------------------------+
+| NAME TYPE CLASS TTL RDLENGTH (     |
+|                 collision blocks ) |
++------------------------------------+
+```
+
+The RRSIG RDATA is controlled by the signer, and must be predicted
+by the attacker. (#harden) discusses how easy it is to predict the
+RRSIG RDATA fields.
+
+The DNS records are under the attacker's control, with some
+limitations:
+
+  * In the innoccuous records, the NAME and TYPE identify an RRset
+    that the attacker can update.
+
+  * In the malicious records, the NAME must be in a zone signed by
+    the same key as the innoccuous records.
+
+  * The innoccuous and malicious TYPEs do not need to be the same,
+    but they must both have RDATA fields that can accommodate the
+    collision blocks.
+
+  * The attacker needs to ensure the records containg the collision
+    blocks come last when the RRsets are sorted into canonical
+    order.
+
+  * The innoccuous and malicious records do not have to be aligned
+    with each other, but they need to have the same total length.
+
+
+
+
+# Hardening RRSIG records {#harden}
 
 
 # Collision attacks and other DNS record types {#attack}
