@@ -18,7 +18,7 @@ ${DRAFT}.txt: ${DRAFT}.xml
 	xml2rfc --raw -o ${DRAFT}.txt ${DRAFT}.xml
 
 commit: stamp ${OUT}
-	git add ${OUT}
+	git add draft.md ${OUT}
 	git commit -m 'Update rendered versions'
 
 stamp:
