@@ -55,23 +55,29 @@ Since 2005, SHA-1 has been known to be much weaker than it was
 designed to be. Over the last 5 years there has been a series of
 increasingly powerful demonstrations that SHA-1's weaknesses can be
 exploited in practice. In January 2020, Gaëtan Leurent and Thomas
-Peyrin announced a chosen-prefix collision for SHA-1 [SHA-MBLES]. This
+Peyrin announced a chosen-prefix collision for SHA-1 [SHA-mbles]. This
 was the first practical break of SHA-1 as used in cryptographic
 signatures.
 
 DNSSEC uses cryptographic signatures to authenticate DNS data. Its
-signature algorithms include RSASHA1 (5) and RSASHA1-NSEC3-SHA1 (7)
-which are vulnerable to chosen-prefix collisions in SHA-1, as
-described in section (#collide). This document deprecates these
-vulnerable algorithms (#deprecate).
+signature algorithms [@?DNSKEY-IANA] include RSASHA1 (5) and
+RSASHA1-NSEC3-SHA1 (7) which are vulnerable to chosen-prefix
+collisions in SHA-1, as described in (#collide). This document
+deprecates these vulnerable algorithms ((#deprecate)).
 
 SHA-1 has been deprecated in other situations for several years (see
 (#timeline)). This document's timetable for deprecating SHA-1 in
-DNSSEC is based on those examples, adapted for the particulars of the
-DNS. Section (#seccons) discusses the trade-offs between speed and
-security.
+DNSSEC ((#deprecate)) is based on those examples, adapted for the
+particulars of the DNS. (#seccons) discusses the trade-offs between
+speed and security.
 
-As 
+A collision attack can be used against DNSSEC in a number of ways,
+some of which are explored in (#attack). Certain weaknesses in the way
+DNSSEC is sometimes deployed can make collision attacks easier to
+carry out, or make their consequences more severe. Although the only
+sure way to protect against collision attacks is to use a secure
+algorithm ((#deprecate)), (#harden) and (#attack) outline some partial
+mitigations.
 
 The DNS uses SHA-1 for a number of other less vulnerable purposes, as
 outlined in section (#otherr).
@@ -156,13 +162,45 @@ significantly weaker before then.
 
 # Other uses of SHA-1 in the DNS {#otherr}
 
-## DS records
+## DS and CDS records
+
+A DS or CDS record securely identifies a DNSKEY record using a
+cryptographic digest ([@?RFC4034] section 5). One of the digest types
+is SHA-1. It is deprecated by [@?RFC8624].
+
+For this purpose, the digest needs preimage security, which SHA-1
+still has, and collision attacks do not affect it.
 
 ## NSEC3 records
 
+NSEC3 is an alternative mechanism for authenticated denial of
+existence in DNSSEC. It is based on SHA-1 hashes of domain names. The
+NSEC3 specification [@?RFC5155] discusses collisions in some detail.
+
+NSEC3 can be attacked with an identical-prefix collision, which is
+simpler than the chosen-prefix collisions that are the main subject of
+this document. The best collision known at the time of writing
+[@?SHAttered] uses two SHA-1 input blocks (128 bytes) so it could in
+principle be made to fit into a domain name for an attack on NSEC3.
+However it will be difficult to make the colliding domain names
+conform to host name syntax, and the attack will be futile because the
+signer can defeat it by changing its NSEC3 salt ([@?RFC5155 ] section
+C.2.1).
+
 ## SSHFP records
 
+An SSHFP record securely identifies an SSH server public key using a
+cryptographic digest [@?RFC4255]. Although SSHFP SHA-1 digests have
+not yet been deprecated, SHA-256 is preferred [@?RFC6594].
+
+For SSHFP records the digest needs preimage security, which SHA-1
+still has, and collision attacks do not affect it.
+
 ## TSIG authentication
+
+TSIG is a DNS extension for secret-key transaction authentication
+[@?I-D.ietf-dnsop-rfc2845bis]. Its `hmac-sha1` algorithm is
+deprecated. Collision attacks do not affect HMAC SHA-1.
 
 
 # Security considerations {#seccons}
@@ -267,7 +305,7 @@ implications of the SHA-1 chosen-prefix collision.
   </front>
 </reference>
 
-  * 2017: Classical collision demonstrated in SHA-1 [@?SHAttered]
+  * 2017: Identical-prefix collision demonstrated in SHA-1 [@?SHAttered]
 
 <reference anchor='SHAttered' target='https://shattered.io/'>
   <front>
