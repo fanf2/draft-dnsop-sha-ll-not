@@ -458,7 +458,68 @@ longer than 512 bits do not make sense.)
 
 ## DNSKEY records
 
+There are a couple of DNSSEC key management models that can make the
+consequences of a collision attack worse.
+
+### Shared keys
+
+Normally each zone has its own DNSSEC keys, so a collision attack only
+works when the attacker's inoccuous and malicious records are in the
+same zone.
+
+Some DNSSEC deployments share the same keys across multiple zones.
+This allows an attacker to target names in any zone that uses the same
+key. For example, if this is a multi-tenant hosting environment, the
+attacker could sign up with their own domain and use that to perform
+collision attacks against other customers on the same platform.
+
+DNS hosting services and DNSSEC signing software SHOULD NOT allow keys
+to be shared between multiple zones.
+
+### Combined signing keys
+
+The traditional DNSSEC setup has two keys for a zone: a key-signing
+key (KSK) that is only used to sign the zone's DNSKEY RRset; and a
+zone-signing key (ZSK) which signs the other records in the zone.
+
+There is a simpler setup in which a zone has only one key: a combined
+signing key (CSK) which signs all the records in the zone.
+
+The DNSKEY RRset is a huge target in a zone that is vulnerable to
+collision attacks: if the attacker can get their own public key into a
+signed DNSKEY RRset then one successful collision attack can be used
+to spoof any record in the zone.
+
+In a zone with split ZSK/KSK, the DNSKEY RRset is only trusted if it
+is signed by the KSK, but collision attacks can only obtain a RRset
+signed by the ZSK.
+
+In a zone with a CSK the attacker can obtain a malicious trusted
+DNSKEY RRset using a collision attack.
+
+DNS hosting services and DNSSEC signing software SHOULD encourage
+split ZSK/KSK configurations.
+
 ## DS records
+
+Top-level domains are the most prominent example of zones that can be
+updated by many different clients from mutually antagonistic
+organizations.
+
+TLDs are typically updated via EPP [@?RFC5730]. The only delegation
+RRtype it might be possible to use for collision attacks are DS
+records. (The other delegation records, NS and glue addresses, are not
+signed and their syntax is too constrained.)
+
+Collision attacks using DS records SHOULD be prevented as follows:
+
+  * Unknown DS digest types are rejected;
+
+  * DS records are required to have the correct length for their
+    digest type;
+
+  * Alternatively, instead of using client-generated DS records, the
+    registry accepts DNSKEY records and generates the DS records.
 
 
 # Other uses of SHA-1 in the DNS {#otherr}
@@ -633,6 +694,7 @@ implications of the SHA-1 chosen-prefix collision.
 
   * 2013: IETF recommends RSASHA1 for use in DNSSEC [@?RFC6944]
 
+
   * 2014: CA/Browser forum sunsets SHA-1 in X.509 WebPKI certificates
     after 2015 [@?CABforum2014]
 
@@ -671,6 +733,7 @@ implications of the SHA-1 chosen-prefix collision.
 </reference>
 
   * 2019: IETF partially deprecates SHA-1 for use in DNSSEC [@!RFC8624]
+
 
   * 2020: Chosen-prefix collision demonstrated in SHA-1 [@?SHA-mbles]
 
