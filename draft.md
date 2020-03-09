@@ -330,7 +330,7 @@ sub-section.)
 
 In 2008 a chosen-prefix collision attack against MD5 was used to
 obtain an illegitimate CA certificate signed by a commercial CA
-[ROGUE-CA]. A key part of this attack was to predict the serial
+[@?ROGUE-CA]. A key part of this attack was to predict the serial
 number and validity period assigned by the commercial CA to the
 innocuous certificate so that its MD5 hash would collide with the
 malicious rogue CA certificate.
@@ -338,8 +338,8 @@ malicious rogue CA certificate.
 Following this attack, certificate authorities started using random
 serial numbers instead of sequential numbers. In 2016 the CA/Browser
 forum baseline requirements were amended to increase the amount of
-randomness required from 20 bits to 64 bits [CABforum2016]. This
-extra hardening was in addition to deprecating SHA-1 [CABforum2014].
+randomness required from 20 bits to 64 bits [@?CABforum2016]. This
+extra hardening was in addition to deprecating SHA-1 [@?CABforum2014].
 
 ## Less predictable RRSIG records
 
@@ -426,7 +426,7 @@ zone owners can use unrestricted binary in TXT records if they wish.
 ## CAA records
 
 An attacker might want to spoof certificate authority authorization
-records [@?RFC6844] in order to obtain an illegitimate X.509
+records [@?RFC8659] in order to obtain an illegitimate X.509
 certificate.
 
 A CAA record contains tag and value strings. The length of the value
@@ -582,7 +582,7 @@ legacy delegations are insecure.
 
 There are still many domains that depend on SHA-1 to secure
 applications that use DNSSEC, such as issuing TLS certificates
-[@?RFC6844] [@?RFC8555], sending inter-domain email [@?RFC7672],
+[@?RFC8659] [@?RFC8555], sending inter-domain email [@?RFC7672],
 and authenticating SSH servers [@?RFC4255].
 
 Some applications use the "authenticated data" (AD bit) signal from
