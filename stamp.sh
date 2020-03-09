@@ -2,13 +2,15 @@
 
 set -eu
 
-draft=$1
-date=$(git log --max-count=1 --format=%ad --date=format:%FT%TZ $1)
+fn=$1
+src=$2
+date=$(git log --max-count=1 --format=%ad --date=format:%FT%TZ $src)
 
-sed '/^%%%/,/^%%%/s/\(^date[	 ]*=[	 ]*\).*/\1'$date'/' \
-    <$draft >$draft.stamp
+sed -e '/^%%%/,/^%%%/s/\(^date[	 ]*=[	 ]*\).*/\1'$date'/' \
+   -e '/^%%%/,/^%%%/s/\(^value[	 ]*=[	 ]*\).*/\1"'$fn'"/' \
+    <$src >$src.stamp
 
-if ! diff -u $draft $draft.stamp
-then mv $draft.stamp $draft
-else rm $draft.stamp
+if ! diff -u $src $src.stamp
+then mv $src.stamp $src
+else rm $src.stamp
 fi

@@ -5,7 +5,7 @@ workgroup       = "DNS Operations"
 area            = "Operations and Management"
 submissiontype  = "IETF"
 ipr             = "trust200902"
-date            = 2020-03-05T20:20:16Z
+date            = 2020-03-05T20:20:40Z
 keyword         = [
     "DNS",
     "SHA-1",
@@ -15,7 +15,7 @@ updates         = [ 8624 ]
 
 [seriesInfo]
 name            = "Internet-Draft"
-value           = "draft-fanf-dnsop-sha-ll-not"
+value           = "draft-fanf-dnsop-sha-ll-not-00"
 status          = "standard"
 
 [[author]]
